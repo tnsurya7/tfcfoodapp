@@ -88,3 +88,8 @@ config/secrets.json
 # Documentation files - Don't push to git
 *.md
 !package.json
+
+# Credential files - NEVER commit these
+*ENV_VARIABLES*
+*credentials*
+*secrets*
