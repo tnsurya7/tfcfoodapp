@@ -1,0 +1,55 @@
+{
+    "name": "TFC Food Ordering System",
+    "short_name": "TFC Food",
+    "description": "Order delicious food delivered fast to your doorstep",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#D32F2F",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "/logo.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/logo.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "categories": [
+        "food",
+        "shopping"
+    ],
+    "screenshots": [],
+    "shortcuts": [
+        {
+            "name": "Menu",
+            "short_name": "Menu",
+            "description": "Browse our menu",
+            "url": "/menu",
+            "icons": [
+                {
+                    "src": "/logo.png",
+                    "sizes": "192x192"
+                }
+            ]
+        },
+        {
+            "name": "Cart",
+            "short_name": "Cart",
+            "description": "View your cart",
+            "url": "/cart",
+            "icons": [
+                {
+                    "src": "/logo.png",
+                    "sizes": "192x192"
+                }
+            ]
+        }
+    ]
+}

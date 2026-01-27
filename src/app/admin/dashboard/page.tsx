@@ -1,0 +1,619 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import {
+    LogOut,
+    Plus,
+    Edit,
+    Trash2,
+    Package,
+    DollarSign,
+    ShoppingBag,
+    TrendingUp,
+    Eye,
+} from 'lucide-react';
+import Link from 'next/link';
+import toast from "@/lib/toast";
+import Image from 'next/image';
+import { useFoodStore } from '@/store/foodStore';
+import { useOrderStore } from '@/store/orderStore';
+import { useCustomerStore } from '@/store/customerStore';
+import { FoodItem } from '@/store/cartStore';
+import FoodForm from '@/components/admin/FoodForm';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
+export default function AdminDashboard() {
+    const router = useRouter();
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [activeTab, setActiveTab] = useState<'foods' | 'orders' | 'customers'>('foods');
+    const [showFoodForm, setShowFoodForm] = useState(false);
+    const [editingFood, setEditingFood] = useState<FoodItem | null>(null);
+    
+    const { foods, deleteFood } = useFoodStore();
+    const { orders, updateOrderStatus, deleteOrder, getTotalRevenue } = useOrderStore();
+    const { customers, getTotalCustomers } = useCustomerStore();
+
+    useEffect(() => {
+        const loggedIn = localStorage.getItem('adminLoggedIn');
+        if (loggedIn !== 'true') {
+            router.push('/admin');
+        } else {
+            setIsLoggedIn(true);
+        }
+    }, [router]);
+
+    const handleLogout = () => {
+        localStorage.removeItem('adminLoggedIn');
+        toast.success('Logged out successfully');
+        router.push('/admin');
+    };
+
+    const handleDeleteFood = (id: string, name: string) => {
+        toast.action(
+            `Are you sure you want to delete "${name}"?`,
+            [
+                {
+                    label: 'Delete',
+                    onClick: () => {
+                        deleteFood(id);
+                        toast.success('Food item deleted successfully');
+                    },
+                    style: 'bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded'
+                },
+                {
+                    label: 'Cancel',
+                    onClick: () => {},
+                    style: 'bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-1 rounded'
+                }
+            ]
+        );
+    };
+
+    const handleEditFood = (food: FoodItem) => {
+        setEditingFood(food);
+        setShowFoodForm(true);
+    };
+
+    const handleAddFood = () => {
+        setEditingFood(null);
+        setShowFoodForm(true);
+    };
+
+    const handleOrderStatusChange = (orderId: string, newStatus: string) => {
+        updateOrderStatus(orderId, newStatus as any);
+        toast.success('Order status updated');
+    };
+
+    const handleDeleteOrder = (orderId: string) => {
+        toast.action(
+            'Are you sure you want to delete this order?',
+            [
+                {
+                    label: 'Delete',
+                    onClick: () => {
+                        deleteOrder(orderId);
+                        toast.success('Order deleted successfully');
+                    },
+                    style: 'bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded'
+                },
+                {
+                    label: 'Cancel',
+                    onClick: () => {},
+                    style: 'bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-1 rounded'
+                }
+            ]
+        );
+    };
+
+    const formatTime = (dateString: string) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+        
+        if (diffInMinutes < 60) {
+            return `${diffInMinutes} mins ago`;
+        } else if (diffInMinutes < 1440) {
+            return `${Math.floor(diffInMinutes / 60)} hours ago`;
+        } else {
+            return `${Math.floor(diffInMinutes / 1440)} days ago`;
+        }
+    };
+
+    if (!isLoggedIn) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Loading...</p>
+                </div>
+            </div>
+        );
+    }
+
+    const totalRevenue = getTotalRevenue();
+    const pendingOrders = orders.filter(order => order.status === 'Pending').length;
+    const totalOrders = orders.length;
+    const totalCustomers = getTotalCustomers();
+
+    const generatePDFReport = () => {
+        const doc = new jsPDF();
+        
+        // Header
+        doc.setFontSize(20);
+        doc.text('TFC Food Ordering - Admin Dashboard Report', 20, 20);
+        
+        doc.setFontSize(12);
+        doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 35);
+        
+        // Summary Stats
+        doc.setFontSize(16);
+        doc.text('Summary Statistics', 20, 55);
+        
+        doc.setFontSize(12);
+        doc.text(`Total Products: ${foods.length}`, 20, 70);
+        doc.text(`Total Orders: ${totalOrders}`, 20, 80);
+        doc.text(`Total Revenue: Rs. ${totalRevenue.toLocaleString()}`, 20, 90);
+        doc.text(`Total Customers: ${totalCustomers}`, 20, 100);
+        doc.text(`Pending Orders: ${pendingOrders}`, 20, 110);
+        
+        // Orders Table
+        if (orders.length > 0) {
+            doc.setFontSize(16);
+            doc.text('Recent Orders', 20, 135);
+            
+            const orderData = orders.slice(0, 10).map(order => [
+                order.id,
+                order.customer,
+                order.email,
+                order.phone,
+                `Rs. ${order.total}`,
+                order.status,
+                new Date(order.createdAt).toLocaleDateString()
+            ]);
+            
+            autoTable(doc, {
+                head: [['Order ID', 'Customer', 'Email', 'Phone', 'Total', 'Status', 'Date']],
+                body: orderData,
+                startY: 145,
+                styles: { fontSize: 8 },
+                headStyles: { fillColor: [211, 47, 47] }
+            });
+        }
+        
+        // Customers Table
+        if (customers.length > 0) {
+            const finalY = (doc as any).lastAutoTable?.finalY || 200;
+            
+            doc.setFontSize(16);
+            doc.text('Customer List', 20, finalY + 20);
+            
+            const customerData = customers.map(customer => [
+                customer.name,
+                customer.phone,
+                customer.totalOrders.toString(),
+                `Rs. ${customer.totalSpent}`,
+                new Date(customer.createdAt).toLocaleDateString()
+            ]);
+            
+            autoTable(doc, {
+                head: [['Name', 'Phone', 'Orders', 'Total Spent', 'Joined']],
+                body: customerData,
+                startY: finalY + 30,
+                styles: { fontSize: 8 },
+                headStyles: { fillColor: [211, 47, 47] }
+            });
+        }
+        
+        // Save the PDF
+        doc.save(`TFC-Dashboard-Report-${new Date().toISOString().split('T')[0]}.pdf`);
+    };
+
+    const stats = [
+        {
+            icon: <Package className="w-8 h-8" />,
+            label: 'Total Products',
+            value: foods.length,
+            color: 'bg-blue-500',
+        },
+        {
+            icon: <ShoppingBag className="w-8 h-8" />,
+            label: 'Total Orders',
+            value: totalOrders,
+            color: 'bg-green-500',
+        },
+        {
+            icon: <DollarSign className="w-8 h-8" />,
+            label: 'Revenue',
+            value: `Rs. ${totalRevenue.toLocaleString()}`,
+            color: 'bg-yellow-500',
+        },
+        {
+            icon: <TrendingUp className="w-8 h-8" />,
+            label: 'Total Customers',
+            value: totalCustomers,
+            color: 'bg-purple-500',
+        },
+    ];
+
+    return (
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+            {/* Header */}
+            <div className="bg-white dark:bg-gray-800 shadow-md">
+                <div className="container mx-auto px-4 py-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-2xl font-bold dark:text-white">Admin Dashboard</h1>
+                            <p className="text-gray-600 dark:text-gray-400">
+                                Manage your food ordering system
+                            </p>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                            <Link href="/" className="text-gray-600 dark:text-gray-400 hover:text-primary">
+                                View Site
+                            </Link>
+                            <button
+                                onClick={generatePDFReport}
+                                className="flex items-center space-x-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors"
+                            >
+                                <Package className="w-4 h-4" />
+                                <span>Download Report</span>
+                            </button>
+                            <button
+                                onClick={handleLogout}
+                                className="flex items-center space-x-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
+                            >
+                                <LogOut className="w-4 h-4" />
+                                <span>Logout</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="container mx-auto px-4 py-8">
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    {stats.map((stat, index) => (
+                        <motion.div
+                            key={index}
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: index * 0.1 }}
+                            className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6"
+                        >
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">
+                                        {stat.label}
+                                    </p>
+                                    <p className="text-3xl font-bold dark:text-white">{stat.value}</p>
+                                </div>
+                                <div className={`${stat.color} text-white p-3 rounded-lg`}>
+                                    {stat.icon}
+                                </div>
+                            </div>
+                        </motion.div>
+                    ))}
+                </div>
+
+                {/* Tabs */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+                    <div className="border-b border-gray-200 dark:border-gray-700">
+                        <div className="flex">
+                            <button
+                                onClick={() => setActiveTab('foods')}
+                                className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'foods'
+                                    ? 'bg-primary text-white'
+                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                    }`}
+                            >
+                                Food Items ({foods.length})
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('orders')}
+                                className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'orders'
+                                    ? 'bg-primary text-white'
+                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                    }`}
+                            >
+                                Orders ({orders.length})
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('customers')}
+                                className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'customers'
+                                    ? 'bg-primary text-white'
+                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                    }`}
+                            >
+                                Customers ({customers.length})
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="p-6">
+                        {activeTab === 'foods' && (
+                            <div>
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-2xl font-bold dark:text-white">Food Items</h2>
+                                    <button 
+                                        onClick={handleAddFood}
+                                        className="btn-primary flex items-center space-x-2"
+                                    >
+                                        <Plus className="w-5 h-5" />
+                                        <span>Add New Item</span>
+                                    </button>
+                                </div>
+
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="border-b border-gray-200 dark:border-gray-700">
+                                                <th className="text-left py-3 px-4 font-semibold dark:text-white">
+                                                    Image
+                                                </th>
+                                                <th className="text-left py-3 px-4 font-semibold dark:text-white">
+                                                    Name
+                                                </th>
+                                                <th className="text-left py-3 px-4 font-semibold dark:text-white">
+                                                    Category
+                                                </th>
+                                                <th className="text-left py-3 px-4 font-semibold dark:text-white">
+                                                    Price
+                                                </th>
+                                                <th className="text-left py-3 px-4 font-semibold dark:text-white">
+                                                    Type
+                                                </th>
+                                                <th className="text-left py-3 px-4 font-semibold dark:text-white">
+                                                    Actions
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {foods.map((food) => (
+                                                <tr
+                                                    key={food.id}
+                                                    className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                                                >
+                                                    <td className="py-3 px-4">
+                                                        <div className="relative w-16 h-16 rounded-lg overflow-hidden">
+                                                            <Image
+                                                                src={food.image}
+                                                                alt={food.name}
+                                                                fill
+                                                                className="object-cover"
+                                                            />
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-3 px-4 dark:text-white">{food.name}</td>
+                                                    <td className="py-3 px-4 dark:text-gray-400 capitalize">
+                                                        {food.category.replace('-', ' ')}
+                                                    </td>
+                                                    <td className="py-3 px-4 dark:text-white font-semibold">
+                                                        ₹{food.price}
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        <span
+                                                            className={`px-3 py-1 rounded-full text-xs font-semibold ${food.isVeg
+                                                                ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                                                                : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                                                                }`}
+                                                        >
+                                                            {food.isVeg ? 'Veg' : 'Non-Veg'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        <div className="flex items-center space-x-2">
+                                                            <button 
+                                                                onClick={() => handleEditFood(food)}
+                                                                className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                                            >
+                                                                <Edit className="w-4 h-4" />
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => handleDeleteFood(food.id, food.name)}
+                                                                className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'orders' && (
+                            <div>
+                                <h2 className="text-2xl font-bold mb-6 dark:text-white">Orders Management</h2>
+
+                                <div className="space-y-4">
+                                    {orders.map((order) => (
+                                        <div
+                                            key={order.id}
+                                            className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 hover:shadow-md transition-shadow"
+                                        >
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center space-x-4 mb-3">
+                                                        <h3 className="font-bold dark:text-white text-lg">
+                                                            Order #{order.id}
+                                                        </h3>
+                                                        <span
+                                                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                                                order.status === 'Pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
+                                                                order.status === 'Preparing' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' :
+                                                                order.status === 'Out for Delivery' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' :
+                                                                order.status === 'Delivered' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' :
+                                                                'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                                                            }`}
+                                                        >
+                                                            {order.status}
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                                        <div>
+                                                            <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                                                <strong>Customer:</strong> {order.customer}
+                                                            </p>
+                                                            <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                                                <strong>Email:</strong> {order.email}
+                                                            </p>
+                                                            <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                                                <strong>Phone:</strong> {order.phone}
+                                                            </p>
+                                                            <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                                                <strong>Payment:</strong> {order.paymentMethod.toUpperCase()}
+                                                            </p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                                                <strong>Items:</strong> {order.items.length} items
+                                                            </p>
+                                                            <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                                                <strong>Total:</strong> ₹{order.total}
+                                                            </p>
+                                                            <p className="text-gray-500 dark:text-gray-500 text-xs">
+                                                                {formatTime(order.createdAt)}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="mb-4">
+                                                        <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">
+                                                            <strong>Address:</strong> {order.address}
+                                                        </p>
+                                                        <div className="text-sm">
+                                                            <strong className="text-gray-700 dark:text-gray-300">Items:</strong>
+                                                            <ul className="mt-1 space-y-1">
+                                                                {order.items.map((item, index) => (
+                                                                    <li key={index} className="text-gray-600 dark:text-gray-400">
+                                                                        {item.name} x {item.quantity} - ₹{item.price * item.quantity}
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="flex items-center space-x-3 ml-4">
+                                                    <select
+                                                        value={order.status}
+                                                        onChange={(e) => handleOrderStatusChange(order.id, e.target.value)}
+                                                        className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                                                    >
+                                                        <option value="Pending">Pending</option>
+                                                        <option value="Preparing">Preparing</option>
+                                                        <option value="Out for Delivery">Out for Delivery</option>
+                                                        <option value="Delivered">Delivered</option>
+                                                        <option value="Cancelled">Cancelled</option>
+                                                    </select>
+                                                    <button
+                                                        onClick={() => handleDeleteOrder(order.id)}
+                                                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'customers' && (
+                            <div>
+                                <h2 className="text-2xl font-bold mb-6 dark:text-white">Customer Management</h2>
+
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="border-b border-gray-200 dark:border-gray-700">
+                                                <th className="text-left py-3 px-4 font-semibold dark:text-white">
+                                                    Name
+                                                </th>
+                                                <th className="text-left py-3 px-4 font-semibold dark:text-white">
+                                                    Phone
+                                                </th>
+                                                <th className="text-left py-3 px-4 font-semibold dark:text-white">
+                                                    Total Orders
+                                                </th>
+                                                <th className="text-left py-3 px-4 font-semibold dark:text-white">
+                                                    Total Spent
+                                                </th>
+                                                <th className="text-left py-3 px-4 font-semibold dark:text-white">
+                                                    Joined Date
+                                                </th>
+                                                <th className="text-left py-3 px-4 font-semibold dark:text-white">
+                                                    Last Login
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {customers.map((customer) => (
+                                                <tr
+                                                    key={customer.id}
+                                                    className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                                                >
+                                                    <td className="py-3 px-4 dark:text-white font-medium">
+                                                        {customer.name}
+                                                    </td>
+                                                    <td className="py-3 px-4 dark:text-gray-400">
+                                                        {customer.phone}
+                                                    </td>
+                                                    <td className="py-3 px-4 dark:text-white">
+                                                        <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 px-2 py-1 rounded-full text-sm">
+                                                            {customer.totalOrders}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 px-4 dark:text-white font-semibold">
+                                                        ₹{customer.totalSpent.toLocaleString()}
+                                                    </td>
+                                                    <td className="py-3 px-4 dark:text-gray-400 text-sm">
+                                                        {new Date(customer.createdAt).toLocaleDateString()}
+                                                    </td>
+                                                    <td className="py-3 px-4 dark:text-gray-400 text-sm">
+                                                        {formatTime(customer.lastLogin)}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                    
+                                    {customers.length === 0 && (
+                                        <div className="text-center py-8">
+                                            <p className="text-gray-500 dark:text-gray-400">No customers found</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Food Form Modal */}
+            <AnimatePresence>
+                {showFoodForm && (
+                    <FoodForm
+                        food={editingFood || undefined}
+                        onClose={() => {
+                            setShowFoodForm(false);
+                            setEditingFood(null);
+                        }}
+                        onSave={() => {
+                            // Refresh will happen automatically due to Zustand reactivity
+                        }}
+                    />
+                )}
+            </AnimatePresence>
+        </div>
+    );
+}

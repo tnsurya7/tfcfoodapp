@@ -1,0 +1,198 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --primary: #D32F2F;
+        --primary-dark: #B71C1C;
+        --primary-light: #EF5350;
+        --secondary: #F9A825;
+        --secondary-dark: #F57F17;
+        --secondary-light: #FDD835;
+    }
+
+    body {
+        @apply bg-white text-gray-900 antialiased;
+    }
+
+    * {
+        @apply border-gray-200;
+    }
+}
+
+@layer components {
+    .btn-primary {
+        @apply bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5;
+    }
+
+    .btn-secondary {
+        @apply bg-secondary hover:bg-secondary-dark text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5;
+    }
+
+    .btn-outline {
+        @apply border-2 border-primary text-primary hover:bg-primary hover:text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300;
+    }
+
+    .card {
+        @apply bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden;
+    }
+
+    .food-card {
+        @apply card transform hover:-translate-y-2 cursor-pointer;
+    }
+
+    .input-field {
+        @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200;
+    }
+
+    .skeleton {
+        @apply animate-pulse bg-gray-200 rounded;
+    }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    @apply bg-gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+    @apply bg-primary rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary-dark;
+}
+
+/* Dark mode styles */
+.dark body {
+    @apply bg-gray-900 text-gray-100;
+}
+
+.dark .card {
+    @apply bg-gray-800 border border-gray-700;
+}
+
+.dark .input-field {
+    @apply bg-gray-800 border-gray-700 text-gray-100;
+}
+
+/* Premium Toast Animations */
+@keyframes slideInRight {
+    0% {
+        transform: translateX(100%) scale(0.8);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    0% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(100%) scale(0.8);
+        opacity: 0;
+    }
+}
+
+@keyframes bounce {
+    0%, 20%, 53%, 80%, 100% {
+        transform: translate3d(0, 0, 0);
+    }
+    40%, 43% {
+        transform: translate3d(0, -8px, 0);
+    }
+    70% {
+        transform: translate3d(0, -4px, 0);
+    }
+    90% {
+        transform: translate3d(0, -2px, 0);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+}
+
+@keyframes shake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+        transform: translateX(-2px);
+    }
+    20%, 40%, 60%, 80% {
+        transform: translateX(2px);
+    }
+}
+
+/* Toast container styles */
+.toast-success {
+    animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), pulse 2s infinite;
+}
+
+.toast-error {
+    animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), shake 0.5s ease-in-out;
+}
+
+.toast-loading {
+    animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Animations */
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-20px);
+    }
+}
+
+.animate-float {
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes scale-in {
+    0% {
+        transform: scale(0);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.animate-scale-in {
+    animation: scale-in 0.3s ease-out;
+}
+
+/* Premium glow effects */
+.glow-success {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+}
+
+.glow-error {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+}
+
+.glow-info {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}

@@ -1,0 +1,62 @@
+{
+    "name": "tfc-food-ordering",
+    "version": "1.0.0",
+    "private": true,
+    "description": "TFC Food Ordering - Delicious food delivered fast to your doorstep",
+    "keywords": ["food", "delivery", "restaurant", "ordering", "nextjs", "firebase"],
+    "author": "SURYA KUMAR",
+    "license": "MIT",
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "next lint",
+        "lint:fix": "next lint --fix",
+        "type-check": "tsc --noEmit",
+        "build:analyze": "ANALYZE=true npm run build",
+        "export": "next export",
+        "deploy": "npm run build && npm run export",
+        "clean": "rm -rf .next out",
+        "test:build": "npm run build && npm run start"
+    },
+    "engines": {
+        "node": ">=18.0.0",
+        "npm": ">=8.0.0"
+    },
+    "dependencies": {
+        "@emailjs/browser": "^4.4.1",
+        "@supabase/supabase-js": "^2.47.10",
+        "axios": "^1.7.9",
+        "firebase": "^12.8.0",
+        "framer-motion": "^11.15.0",
+        "jspdf": "^4.0.0",
+        "jspdf-autotable": "^5.0.7",
+        "lucide-react": "^0.468.0",
+        "next": "^15.1.5",
+        "next-pwa": "^5.6.0",
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
+        "react-hot-toast": "^2.4.1",
+        "zustand": "^5.0.2"
+    },
+    "devDependencies": {
+        "@next/bundle-analyzer": "^15.1.5",
+        "@types/node": "^22",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "autoprefixer": "^10.4.20",
+        "eslint": "^9",
+        "eslint-config-next": "^15.1.5",
+        "postcss": "^8.4.49",
+        "tailwindcss": "^3.4.1",
+        "typescript": "^5"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/tnsurya7/tfcfoodapp.git"
+    },
+    "bugs": {
+        "url": "https://github.com/tnsurya7/tfcfoodapp/issues"
+    },
+    "homepage": "https://tfcfoodapp.vercel.app"
+}
