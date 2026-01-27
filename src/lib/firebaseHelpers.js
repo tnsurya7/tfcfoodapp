@@ -1,11 +1,24 @@
 import { database } from './firebase';
 import { ref, set, get, push, update, remove, onValue, off } from 'firebase/database';
 
+// Check if database is available
+const isDatabaseAvailable = () => {
+    if (!database) {
+        console.warn('Firebase database not initialized. Make sure environment variables are set.');
+        return false;
+    }
+    return true;
+};
+
 // ==================== USER FUNCTIONS ====================
 
 // Save user after email OTP verification
 export const saveUser = async (userData) => {
     try {
+        if (!isDatabaseAvailable()) {
+            return { success: false, error: 'Database not available' };
+        }
+        
         const userId = userData.email.replace(/\./g, '_').replace(/@/g, '_at_');
         const userRef = ref(database, `tfc/users/${userId}`);
         
@@ -447,6 +460,10 @@ export const generateUserId = (email) => {
 // Initialize default admin (run once)
 export const initializeDefaultAdmin = async () => {
     try {
+        if (!isDatabaseAvailable()) {
+            return { success: false, error: 'Database not available' };
+        }
+        
         const username = process.env.NEXT_PUBLIC_ADMIN_USERNAME;
         const password = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
         

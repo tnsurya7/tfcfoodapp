@@ -1,0 +1,56 @@
+🔧 VERCEL ENVIRONMENT VARIABLES SETUP
+
+Go to: https://vercel.com/surya-kumars-projects-d7755a57/tfcfoodapp/settings/environment-variables
+
+Add these environment variables (get values from your Firebase project):
+
+1. NEXT_PUBLIC_FIREBASE_API_KEY
+   Value: [Your Firebase API Key]
+
+2. NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+   Value: [Your Firebase Auth Domain]
+
+3. NEXT_PUBLIC_FIREBASE_DATABASE_URL
+   Value: [Your Firebase Realtime Database URL]
+
+4. NEXT_PUBLIC_FIREBASE_PROJECT_ID
+   Value: [Your Firebase Project ID]
+
+5. NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+   Value: [Your Firebase Storage Bucket]
+
+6. NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+   Value: [Your Firebase Messaging Sender ID]
+
+7. NEXT_PUBLIC_FIREBASE_APP_ID
+   Value: [Your Firebase App ID]
+
+8. NEXT_PUBLIC_EMAILJS_SERVICE_ID
+   Value: [Your EmailJS Service ID]
+
+9. NEXT_PUBLIC_EMAILJS_TEMPLATE_ID
+   Value: [Your EmailJS Template ID]
+
+10. NEXT_PUBLIC_EMAILJS_PUBLIC_KEY
+    Value: [Your EmailJS Public Key]
+
+11. EMAILJS_PRIVATE_KEY
+    Value: [Your EmailJS Private Key]
+
+12. NEXT_PUBLIC_ADMIN_USERNAME
+    Value: [Your Admin Username]
+
+13. NEXT_PUBLIC_ADMIN_PASSWORD
+    Value: [Your Admin Password]
+
+For each variable:
+- Click "Add New"
+- Enter the Name (exactly as shown above)
+- Enter the Value (copy from your .env.local file)
+- Select "Production, Preview, and Development"
+- Click "Save"
+
+After adding all variables, redeploy by running:
+vercel --prod
+
+Or trigger a new deployment from the Vercel dashboard.
