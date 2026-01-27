@@ -290,7 +290,7 @@ function ProfileContent() {
                                                     <OrderTracker 
                                                         status={order.status}
                                                         createdAt={order.createdAt}
-                                                        statusHistory={order.statusHistory}
+                                                        statusHistory={order.statusHistory || {}}
                                                     />
                                                 </div>
                                             </motion.div>

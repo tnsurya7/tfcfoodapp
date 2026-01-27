@@ -19,6 +19,7 @@ export interface Order {
     paymentMethod: string;
     createdAt: string;
     updatedAt: string;
+    statusHistory?: Record<string, string>;
 }
 
 interface OrderStore {

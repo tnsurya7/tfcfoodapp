@@ -27,7 +27,7 @@ const nextConfig: NextConfig = {
     
     // Experimental features for better performance
     experimental: {
-        optimizeCss: true,
+        // optimizeCss: true, // Disabled due to critters module issue
         optimizePackageImports: ['lucide-react', 'framer-motion'],
     },
     
