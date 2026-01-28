@@ -29,6 +29,7 @@ import {
     deleteOrder as deleteFirebaseOrder,
     listenToFoods,
     listenToOrders,
+    listenToUsers,
     getDatabaseStats,
     getDeliveredRevenue,
     getAdminStats
@@ -47,6 +48,7 @@ export default function AdminDashboard() {
     // Firebase data states
     const { foods, listenFoods, addFood: addFoodToFirebase, updateFood: updateFoodInFirebase, deleteFood: deleteFoodFromFirebase } = useFirebaseFoodStore();
     const [orders, setOrders] = useState<any[]>([]);
+    const [users, setUsers] = useState<any[]>([]);
     const [stats, setStats] = useState({
         totalCustomers: 0,
         totalProducts: 0,
@@ -119,7 +121,7 @@ export default function AdminDashboard() {
                 });
             }
 
-            // Set up real-time listeners for orders only (foods handled by store)
+            // Set up real-time listeners for orders and users
             const unsubscribeOrders = listenToOrders((updatedOrders: any[]) => {
                 setOrders(updatedOrders);
                 // Update order stats from Firebase data
@@ -128,20 +130,29 @@ export default function AdminDashboard() {
                     .filter(order => order.status?.toLowerCase() === 'delivered')
                     .reduce((sum, order) => sum + (order.total || 0), 0);
                 
-                // Calculate unique customers from orders
-                const uniqueCustomers = new Set(updatedOrders.map(order => order.email)).size;
-                
                 setStats(prevStats => ({
                     ...prevStats,
                     totalOrders,
-                    totalRevenue,
-                    totalCustomers: uniqueCustomers
+                    totalRevenue
+                }));
+            });
+
+            // Set up real-time listener for users
+            const unsubscribeUsers = listenToUsers((updatedUsers: any[]) => {
+                console.log('📊 Firebase users updated:', updatedUsers.length, 'users');
+                setUsers(updatedUsers);
+                
+                // Update customer count from Firebase users
+                setStats(prevStats => ({
+                    ...prevStats,
+                    totalCustomers: updatedUsers.length
                 }));
             });
 
             // Cleanup listeners on unmount
             return () => {
                 if (unsubscribeOrders) unsubscribeOrders();
+                if (unsubscribeUsers) unsubscribeUsers();
             };
 
         } catch (error) {
@@ -298,13 +309,15 @@ export default function AdminDashboard() {
         doc.text(`Total Customers: ${stats.totalCustomers}`, 20, 100);
         doc.text(`Pending Orders: ${pendingOrders}`, 20, 110);
         
+        let currentY = 130;
+        
         // Orders Table
         if (orders.length > 0) {
             doc.setFontSize(16);
-            doc.text('Recent Orders', 20, 135);
+            doc.text('Recent Orders', 20, currentY);
             
-            const orderData = orders.slice(0, 10).map(order => [
-                order.id,
+            const orderData = orders.slice(0, 8).map(order => [
+                order.id.substring(0, 12) + '...',
                 order.customer,
                 order.email,
                 order.phone,
@@ -316,13 +329,105 @@ export default function AdminDashboard() {
             autoTable(doc, {
                 head: [['Order ID', 'Customer', 'Email', 'Phone', 'Total', 'Status', 'Date']],
                 body: orderData,
-                startY: 145,
+                startY: currentY + 10,
                 styles: { fontSize: 8 },
                 headStyles: { fillColor: [211, 47, 47] }
             });
+            
+            currentY = (doc as any).lastAutoTable.finalY + 20;
         }
         
-        // Skip customers table - not implemented yet
+        // Customer Analysis Section
+        if (users.length > 0) {
+            // Build customer analytics from users and orders
+            const customerAnalytics = users.map(user => {
+                const userOrders = orders.filter(order => order.email === user.email);
+                const totalOrders = userOrders.length;
+                const totalSpent = userOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+                
+                let firstOrderDate = null;
+                let lastOrderDate = null;
+                let lastOrderStatus = 'No Orders';
+                
+                if (userOrders.length > 0) {
+                    const sortedOrders = userOrders.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+                    firstOrderDate = sortedOrders[0].createdAt;
+                    lastOrderDate = sortedOrders[sortedOrders.length - 1].createdAt;
+                    lastOrderStatus = sortedOrders[sortedOrders.length - 1].status;
+                }
+                
+                return {
+                    customerId: user.id,
+                    name: user.name,
+                    email: user.email,
+                    phone: user.phone,
+                    totalOrders,
+                    totalSpent,
+                    firstOrderDate: firstOrderDate || user.createdAt,
+                    lastOrderDate: lastOrderDate || user.lastLogin,
+                    lastOrderStatus,
+                    accountCreated: user.createdAt
+                };
+            });
+            
+            // Customer Summary
+            doc.setFontSize(16);
+            doc.text('Customer Analysis', 20, currentY);
+            
+            doc.setFontSize(12);
+            const activeCustomers = customerAnalytics.filter(c => {
+                const daysSinceLastLogin = (Date.now() - new Date(c.lastOrderDate).getTime()) / (1000 * 60 * 60 * 24);
+                return daysSinceLastLogin <= 7;
+            }).length;
+            
+            const repeatCustomers = customerAnalytics.filter(c => c.totalOrders > 1).length;
+            const customersWithOrders = customerAnalytics.filter(c => c.totalOrders > 0);
+            const avgOrderValue = customersWithOrders.length > 0 
+                ? customersWithOrders.reduce((sum, c) => sum + (c.totalSpent / Math.max(c.totalOrders, 1)), 0) / customersWithOrders.length 
+                : 0;
+            
+            doc.text(`Total Customers: ${users.length}`, 20, currentY + 20);
+            doc.text(`Active Customers (last 7 days): ${activeCustomers}`, 20, currentY + 30);
+            doc.text(`Repeat Customers: ${repeatCustomers}`, 20, currentY + 40);
+            doc.text(`Average Order Value: Rs. ${avgOrderValue.toFixed(0)}`, 20, currentY + 50);
+            
+            currentY += 70;
+            
+            // Customer List Table
+            doc.setFontSize(16);
+            doc.text('Customer List', 20, currentY);
+            
+            const customerData = customerAnalytics.slice(0, 10).map(customer => [
+                customer.customerId.substring(0, 15) + '...',
+                customer.name,
+                customer.email,
+                customer.phone,
+                customer.totalOrders.toString(),
+                `Rs. ${customer.totalSpent}`,
+                customer.lastOrderDate ? new Date(customer.lastOrderDate).toLocaleDateString() : 'Never',
+                customer.lastOrderStatus,
+                new Date(customer.accountCreated).toLocaleDateString()
+            ]);
+            
+            autoTable(doc, {
+                head: [['Customer ID', 'Name', 'Email', 'Phone', 'Orders', 'Total Spent', 'Last Activity', 'Last Status', 'Joined']],
+                body: customerData,
+                startY: currentY + 10,
+                styles: { fontSize: 7 },
+                headStyles: { fillColor: [211, 47, 47] },
+                columnStyles: {
+                    0: { cellWidth: 25 },
+                    1: { cellWidth: 20 },
+                    2: { cellWidth: 35 },
+                    3: { cellWidth: 20 },
+                    4: { cellWidth: 15 },
+                    5: { cellWidth: 20 },
+                    6: { cellWidth: 20 },
+                    7: { cellWidth: 20 },
+                    8: { cellWidth: 20 }
+                }
+            });
+        }
         
         // Save the PDF
         doc.save(`TFC-Dashboard-Report-${new Date().toISOString().split('T')[0]}.pdf`);
@@ -445,10 +550,7 @@ export default function AdminDashboard() {
                                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
                                     }`}
                             >
-                                Customers ({(() => {
-                                    const customerEmails = new Set(orders.map(order => order.email));
-                                    return customerEmails.size;
-                                })()})
+                                Customers ({users.length})
                             </button>
                         </div>
                     </div>
@@ -672,62 +774,44 @@ export default function AdminDashboard() {
                                                     Total Spent
                                                 </th>
                                                 <th className="text-left py-3 px-4 font-semibold dark:text-white">
-                                                    Last Order
+                                                    Last Login
+                                                </th>
+                                                <th className="text-left py-3 px-4 font-semibold dark:text-white">
+                                                    Account Created
                                                 </th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {(() => {
-                                                // Build customers from orders
-                                                const customerMap = new Map();
-                                                
-                                                orders.forEach(order => {
-                                                    if (!customerMap.has(order.email)) {
-                                                        customerMap.set(order.email, {
-                                                            name: order.customer,
-                                                            email: order.email,
-                                                            phone: order.phone,
-                                                            totalOrders: 0,
-                                                            totalSpent: 0,
-                                                            lastOrderDate: order.createdAt
-                                                        });
-                                                    }
+                                            {users.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={7} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                                                        No customers found
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                users.map((user) => {
+                                                    // Calculate user's order statistics
+                                                    const userOrders = orders.filter(order => order.email === user.email);
+                                                    const totalOrders = userOrders.length;
+                                                    const totalSpent = userOrders.reduce((sum, order) => sum + (order.total || 0), 0);
                                                     
-                                                    const customer = customerMap.get(order.email);
-                                                    customer.totalOrders += 1;
-                                                    customer.totalSpent += order.total;
-                                                    
-                                                    // Update last order date if this order is more recent
-                                                    if (new Date(order.createdAt) > new Date(customer.lastOrderDate)) {
-                                                        customer.lastOrderDate = order.createdAt;
-                                                    }
-                                                });
-                                                
-                                                const customers = Array.from(customerMap.values());
-                                                
-                                                if (customers.length === 0) {
                                                     return (
-                                                        <tr>
-                                                            <td colSpan={6} className="text-center py-8 text-gray-500 dark:text-gray-400">
-                                                                No customers found
+                                                        <tr key={user.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                                            <td className="py-3 px-4 dark:text-white font-semibold">{user.name}</td>
+                                                            <td className="py-3 px-4 dark:text-gray-400">{user.email}</td>
+                                                            <td className="py-3 px-4 dark:text-gray-400">{user.phone}</td>
+                                                            <td className="py-3 px-4 dark:text-white font-semibold">{totalOrders}</td>
+                                                            <td className="py-3 px-4 dark:text-white font-semibold">₹{totalSpent}</td>
+                                                            <td className="py-3 px-4 dark:text-gray-400">
+                                                                {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+                                                            </td>
+                                                            <td className="py-3 px-4 dark:text-gray-400">
+                                                                {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}
                                                             </td>
                                                         </tr>
                                                     );
-                                                }
-                                                
-                                                return customers.map((customer, index) => (
-                                                    <tr key={customer.email} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                                        <td className="py-3 px-4 dark:text-white">{customer.name}</td>
-                                                        <td className="py-3 px-4 dark:text-gray-400">{customer.email}</td>
-                                                        <td className="py-3 px-4 dark:text-gray-400">{customer.phone}</td>
-                                                        <td className="py-3 px-4 dark:text-white font-semibold">{customer.totalOrders}</td>
-                                                        <td className="py-3 px-4 dark:text-white font-semibold">₹{customer.totalSpent}</td>
-                                                        <td className="py-3 px-4 dark:text-gray-400">
-                                                            {new Date(customer.lastOrderDate).toLocaleDateString()}
-                                                        </td>
-                                                    </tr>
-                                                ));
-                                            })()}
+                                                })
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>

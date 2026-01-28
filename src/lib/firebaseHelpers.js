@@ -406,6 +406,20 @@ export const getAdminStats = async () => {
 
 /* ------------------ UTILITY ------------------ */
 
+export const listenToUsers = (callback) => {
+    if (!database) return () => {};
+    const usersRef = ref(database, "tfc/users");
+    return onValue(usersRef, (snap) => {
+        if (!snap.exists()) return callback([]);
+        const data = snap.val();
+        const users = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+        }));
+        callback(users);
+    });
+};
+
 export const generateUserId = (email) => {
     return email.replace(/\./g, '_').replace(/@/g, '_at_');
 };
