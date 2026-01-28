@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 // Premium success toast with enhanced effects
 export const showSuccessToast = (message, options = {}) => {
     return toast.success(message, {
-        duration: 4000,
+        duration: 2000, // Reduced from 4000ms to 2000ms
         style: {
             background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
             color: '#ffffff',

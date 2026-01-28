@@ -78,7 +78,7 @@ export default function FoodDetailsPage({ params }: { params: Promise<{ id: stri
             }
         }
         
-        toast.success(`${quantity} x ${food.name} added to cart!`);
+        // Toast is already shown by firebaseCartStore, no need for duplicate
         router.push('/cart');
     };
 

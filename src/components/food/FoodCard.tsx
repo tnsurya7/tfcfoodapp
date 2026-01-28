@@ -30,9 +30,8 @@ export default function FoodCard({ food }: FoodCardProps) {
         setUserId(emailUser.email);
         const result = await addItem(food);
         
-        if (result) {
-            toast.success(`${food.name} added to cart!`);
-        } else {
+        // Toast is already handled in the store, no need to show it here
+        if (!result) {
             toast.error('Failed to add item to cart');
         }
     };
