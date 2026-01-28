@@ -18,11 +18,19 @@ export default function HomePage() {
                         </a>
                         <br />
                         <a 
-                            href="/admin" 
+                            href="/test" 
                             className="inline-block bg-transparent border-2 border-white text-white font-bold px-8 py-4 rounded-full hover:bg-white hover:text-red-600 transition-colors"
                         >
-                            Admin Panel
+                            Test Page
                         </a>
+                    </div>
+                    <div className="mt-12 text-center">
+                        <p className="text-lg mb-4">🍽️ Fresh • Fast • Delicious</p>
+                        <div className="flex justify-center space-x-8 text-sm">
+                            <div>📍 Nasiyanur, Erode</div>
+                            <div>📞 +91 6379151006</div>
+                            <div>⏰ Mon-Fri 4PM-11PM</div>
+                        </div>
                     </div>
                 </div>
             </div>

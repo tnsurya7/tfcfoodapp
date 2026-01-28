@@ -8,8 +8,8 @@ const withPWA = require('next-pwa')({
 });
 
 const nextConfig: NextConfig = {
-    // Optimize for Vercel deployment
-    output: 'standalone',
+    // Remove standalone output for now to fix deployment
+    // output: 'standalone',
     
     // Image optimization for Vercel
     images: {
@@ -19,15 +19,11 @@ const nextConfig: NextConfig = {
                 hostname: '**',
             },
         ],
-        // Optimize image loading
         formats: ['image/webp', 'image/avif'],
-        deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-        imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     },
     
     // Experimental features for better performance
     experimental: {
-        // optimizeCss: true, // Disabled due to critters module issue
         optimizePackageImports: ['lucide-react', 'framer-motion'],
     },
     
@@ -53,15 +49,6 @@ const nextConfig: NextConfig = {
                     {
                         key: 'Referrer-Policy',
                         value: 'origin-when-cross-origin',
-                    },
-                ],
-            },
-            {
-                source: '/api/(.*)',
-                headers: [
-                    {
-                        key: 'Cache-Control',
-                        value: 'public, max-age=0, s-maxage=86400',
                     },
                 ],
             },
