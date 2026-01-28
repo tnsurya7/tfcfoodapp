@@ -570,27 +570,31 @@ export default function AdminDashboard() {
             {/* Header */}
             <div className="bg-white dark:bg-gray-800 shadow-md">
                 <div className="container mx-auto px-4 py-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
-                            <h1 className="text-2xl font-bold dark:text-white">Admin Dashboard</h1>
-                            <p className="text-gray-600 dark:text-gray-400">
+                            <h1 className="text-xl sm:text-2xl font-bold dark:text-white">Admin Dashboard</h1>
+                            <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
                                 Manage your food ordering system
                             </p>
                         </div>
-                        <div className="flex items-center space-x-4">
-                            <Link href="/" className="text-gray-600 dark:text-gray-400 hover:text-primary">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
+                            <Link 
+                                href="/" 
+                                className="text-center sm:text-left text-gray-600 dark:text-gray-400 hover:text-primary text-sm sm:text-base py-2 sm:py-0"
+                            >
                                 View Site
                             </Link>
                             <button
                                 onClick={generatePDFReport}
-                                className="flex items-center space-x-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors"
+                                className="flex items-center justify-center space-x-2 bg-green-500 hover:bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base"
                             >
                                 <Package className="w-4 h-4" />
-                                <span>Download Report</span>
+                                <span className="hidden sm:inline">Download Report</span>
+                                <span className="sm:hidden">Report</span>
                             </button>
                             <button
                                 onClick={handleLogout}
-                                className="flex items-center space-x-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
+                                className="flex items-center justify-center space-x-2 bg-red-500 hover:bg-red-600 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base"
                             >
                                 <LogOut className="w-4 h-4" />
                                 <span>Logout</span>
@@ -600,26 +604,28 @@ export default function AdminDashboard() {
                 </div>
             </div>
 
-            <div className="container mx-auto px-4 py-8">
+            <div className="container mx-auto px-4 py-4 sm:py-8">
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
                     {statsCards.map((stat, index) => (
                         <motion.div
                             key={index}
                             initial={{ opacity: 0, y: 30 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5, delay: index * 0.1 }}
-                            className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6"
+                            className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 sm:p-6"
                         >
                             <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mb-1 truncate">
                                         {stat.label}
                                     </p>
-                                    <p className="text-3xl font-bold dark:text-white">{stat.value}</p>
+                                    <p className="text-2xl sm:text-3xl font-bold dark:text-white truncate">{stat.value}</p>
                                 </div>
-                                <div className={`${stat.color} text-white p-3 rounded-lg`}>
-                                    {stat.icon}
+                                <div className={`${stat.color} text-white p-2 sm:p-3 rounded-lg flex-shrink-0 ml-2`}>
+                                    <div className="w-6 h-6 sm:w-8 sm:h-8">
+                                        {stat.icon}
+                                    </div>
                                 </div>
                             </div>
                         </motion.div>
@@ -629,19 +635,20 @@ export default function AdminDashboard() {
                 {/* Tabs */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
                     <div className="border-b border-gray-200 dark:border-gray-700">
-                        <div className="flex">
+                        <div className="flex flex-col sm:flex-row">
                             <button
                                 onClick={() => setActiveTab('foods')}
-                                className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'foods'
+                                className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 font-semibold transition-colors text-sm sm:text-base ${activeTab === 'foods'
                                     ? 'bg-primary text-white'
                                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
                                     }`}
                             >
-                                Food Items ({stats.totalProducts})
+                                <span className="sm:hidden">Foods ({stats.totalProducts})</span>
+                                <span className="hidden sm:inline">Food Items ({stats.totalProducts})</span>
                             </button>
                             <button
                                 onClick={() => setActiveTab('orders')}
-                                className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'orders'
+                                className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 font-semibold transition-colors text-sm sm:text-base ${activeTab === 'orders'
                                     ? 'bg-primary text-white'
                                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
                                     }`}
@@ -650,7 +657,7 @@ export default function AdminDashboard() {
                             </button>
                             <button
                                 onClick={() => setActiveTab('customers')}
-                                className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'customers'
+                                className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 font-semibold transition-colors text-sm sm:text-base ${activeTab === 'customers'
                                     ? 'bg-primary text-white'
                                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
                                     }`}
@@ -660,21 +667,72 @@ export default function AdminDashboard() {
                         </div>
                     </div>
 
-                    <div className="p-6">
+                    <div className="p-4 sm:p-6">
                         {activeTab === 'foods' && (
                             <div>
-                                <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-2xl font-bold dark:text-white">Food Items</h2>
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                                    <h2 className="text-xl sm:text-2xl font-bold dark:text-white">Food Items</h2>
                                     <button 
                                         onClick={handleAddFood}
-                                        className="btn-primary flex items-center space-x-2"
+                                        className="btn-primary flex items-center justify-center space-x-2 w-full sm:w-auto"
                                     >
                                         <Plus className="w-5 h-5" />
                                         <span>Add New Item</span>
                                     </button>
                                 </div>
 
-                                <div className="overflow-x-auto">
+                                {/* Mobile Cards View */}
+                                <div className="block sm:hidden space-y-4">
+                                    {foods.map((food) => (
+                                        <div
+                                            key={food.id}
+                                            className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow"
+                                        >
+                                            <div className="flex items-start space-x-4">
+                                                <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+                                                    <Image
+                                                        src={food.image}
+                                                        alt={food.name}
+                                                        fill
+                                                        className="object-cover"
+                                                    />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h3 className="font-bold dark:text-white text-lg truncate">{food.name}</h3>
+                                                    <p className="text-gray-600 dark:text-gray-400 text-sm capitalize">
+                                                        {food.category.replace('-', ' ')}
+                                                    </p>
+                                                    <p className="text-primary font-bold text-lg">₹{food.price}</p>
+                                                    <span
+                                                        className={`inline-block px-2 py-1 rounded-full text-xs font-semibold mt-1 ${food.type === 'veg'
+                                                            ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                                                            : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                                                            }`}
+                                                    >
+                                                        {food.type === 'veg' ? 'Veg' : 'Non-Veg'}
+                                                    </span>
+                                                </div>
+                                                <div className="flex flex-col space-y-2">
+                                                    <button 
+                                                        onClick={() => handleEditFood(food)}
+                                                        className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                                    >
+                                                        <Edit className="w-5 h-5" />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleDeleteFood(food.id, food.name)}
+                                                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                    >
+                                                        <Trash2 className="w-5 h-5" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Desktop Table View */}
+                                <div className="hidden sm:block overflow-x-auto">
                                     <table className="w-full">
                                         <thead>
                                             <tr className="border-b border-gray-200 dark:border-gray-700">
@@ -757,22 +815,22 @@ export default function AdminDashboard() {
 
                         {activeTab === 'orders' && (
                             <div>
-                                <h2 className="text-2xl font-bold mb-6 dark:text-white">Orders Management</h2>
+                                <h2 className="text-xl sm:text-2xl font-bold mb-6 dark:text-white">Orders Management</h2>
 
                                 <div className="space-y-4">
                                     {orders.map((order) => (
                                         <div
                                             key={order.id}
-                                            className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 hover:shadow-md transition-shadow"
+                                            className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 sm:p-6 hover:shadow-md transition-shadow"
                                         >
-                                            <div className="flex items-start justify-between">
+                                            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                                                 <div className="flex-1">
-                                                    <div className="flex items-center space-x-4 mb-3">
-                                                        <h3 className="font-bold dark:text-white text-lg">
-                                                            Order #{order.id}
+                                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-3">
+                                                        <h3 className="font-bold dark:text-white text-base sm:text-lg">
+                                                            Order #{order.id.substring(0, 8)}...
                                                         </h3>
                                                         <span
-                                                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                                            className={`px-3 py-1 rounded-full text-xs font-semibold self-start ${
                                                                 order.status?.toLowerCase() === 'pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
                                                                 order.status?.toLowerCase() === 'preparing' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' :
                                                                 order.status?.toLowerCase() === 'out for delivery' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' :
@@ -784,27 +842,27 @@ export default function AdminDashboard() {
                                                         </span>
                                                     </div>
                                                     
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                                        <div>
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
+                                                        <div className="space-y-1">
                                                             <p className="text-gray-600 dark:text-gray-400 text-sm">
                                                                 <strong>Customer:</strong> {order.customer}
                                                             </p>
                                                             <p className="text-gray-600 dark:text-gray-400 text-sm">
-                                                                <strong>Email:</strong> {order.email}
+                                                                <strong>Email:</strong> <span className="break-all">{order.email}</span>
                                                             </p>
                                                             <p className="text-gray-600 dark:text-gray-400 text-sm">
                                                                 <strong>Phone:</strong> {order.phone}
                                                             </p>
                                                             <p className="text-gray-600 dark:text-gray-400 text-sm">
-                                                                <strong>Payment:</strong> {order.paymentMethod.toUpperCase()}
+                                                                <strong>Payment:</strong> {order.paymentMethod?.toUpperCase() || 'COD'}
                                                             </p>
                                                         </div>
-                                                        <div>
+                                                        <div className="space-y-1">
                                                             <p className="text-gray-600 dark:text-gray-400 text-sm">
-                                                                <strong>Items:</strong> {order.items.length} items
+                                                                <strong>Items:</strong> {order.items?.length || 0} items
                                                             </p>
                                                             <p className="text-gray-600 dark:text-gray-400 text-sm">
-                                                                <strong>Total:</strong> ₹{order.total}
+                                                                <strong>Total:</strong> <span className="text-primary font-semibold">₹{order.total}</span>
                                                             </p>
                                                             <p className="text-gray-500 dark:text-gray-500 text-xs">
                                                                 {formatTime(order.createdAt)}
@@ -814,26 +872,26 @@ export default function AdminDashboard() {
 
                                                     <div className="mb-4">
                                                         <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">
-                                                            <strong>Address:</strong> {order.address}
+                                                            <strong>Address:</strong> <span className="break-words">{order.address}</span>
                                                         </p>
                                                         <div className="text-sm">
                                                             <strong className="text-gray-700 dark:text-gray-300">Items:</strong>
                                                             <ul className="mt-1 space-y-1">
-                                                                {order.items.map((item: any, index: number) => (
-                                                                    <li key={index} className="text-gray-600 dark:text-gray-400">
-                                                                        {item.name} x {item.quantity} - ₹{item.price * item.quantity}
+                                                                {order.items?.map((item: any, index: number) => (
+                                                                    <li key={index} className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
+                                                                        {item.name} x {item.quantity || item.qty || 1} - ₹{((item.price || 0) * (item.quantity || item.qty || 1)).toFixed(0)}
                                                                     </li>
-                                                                ))}
+                                                                )) || <li className="text-gray-500">No items</li>}
                                                             </ul>
                                                         </div>
                                                     </div>
                                                 </div>
                                                 
-                                                <div className="flex items-center space-x-3 ml-4">
+                                                <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-2 sm:gap-3 lg:gap-2 lg:ml-4">
                                                     <select
                                                         value={order.status}
                                                         onChange={(e) => handleOrderStatusChange(order.id, e.target.value)}
-                                                        className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                                                        className="px-3 sm:px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary text-sm"
                                                     >
                                                         <option value="pending">Pending</option>
                                                         <option value="preparing">Preparing</option>
@@ -843,7 +901,7 @@ export default function AdminDashboard() {
                                                     </select>
                                                     <button
                                                         onClick={() => handleDeleteOrder(order.id)}
-                                                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors self-center sm:self-auto"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
@@ -851,75 +909,139 @@ export default function AdminDashboard() {
                                             </div>
                                         </div>
                                     ))}
+                                    
+                                    {orders.length === 0 && (
+                                        <div className="text-center py-12">
+                                            <div className="text-6xl mb-4">📋</div>
+                                            <h3 className="text-xl font-semibold dark:text-white mb-2">No Orders Yet</h3>
+                                            <p className="text-gray-500 dark:text-gray-400">Orders will appear here when customers place them.</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
 
                         {activeTab === 'customers' && (
                             <div>
-                                <h2 className="text-2xl font-bold mb-6 dark:text-white">Customer Management</h2>
+                                <h2 className="text-xl sm:text-2xl font-bold mb-6 dark:text-white">Customer Management</h2>
 
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
-                                        <thead>
-                                            <tr className="border-b border-gray-200 dark:border-gray-700">
-                                                <th className="text-left py-3 px-4 font-semibold dark:text-white">
-                                                    Name
-                                                </th>
-                                                <th className="text-left py-3 px-4 font-semibold dark:text-white">
-                                                    Email
-                                                </th>
-                                                <th className="text-left py-3 px-4 font-semibold dark:text-white">
-                                                    Phone
-                                                </th>
-                                                <th className="text-left py-3 px-4 font-semibold dark:text-white">
-                                                    Total Orders
-                                                </th>
-                                                <th className="text-left py-3 px-4 font-semibold dark:text-white">
-                                                    Total Spent
-                                                </th>
-                                                <th className="text-left py-3 px-4 font-semibold dark:text-white">
-                                                    Last Login
-                                                </th>
-                                                <th className="text-left py-3 px-4 font-semibold dark:text-white">
-                                                    Account Created
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {users.length === 0 ? (
-                                                <tr>
-                                                    <td colSpan={7} className="text-center py-8 text-gray-500 dark:text-gray-400">
-                                                        No customers found
-                                                    </td>
-                                                </tr>
-                                            ) : (
-                                                users.map((user) => {
-                                                    // Calculate user's order statistics
-                                                    const userOrders = orders.filter(order => order.email === user.email);
-                                                    const totalOrders = userOrders.length;
-                                                    const totalSpent = userOrders.reduce((sum, order) => sum + (order.total || 0), 0);
-                                                    
-                                                    return (
-                                                        <tr key={user.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                                            <td className="py-3 px-4 dark:text-white font-semibold">{user.name}</td>
-                                                            <td className="py-3 px-4 dark:text-gray-400">{user.email}</td>
-                                                            <td className="py-3 px-4 dark:text-gray-400">{user.phone}</td>
-                                                            <td className="py-3 px-4 dark:text-white font-semibold">{totalOrders}</td>
-                                                            <td className="py-3 px-4 dark:text-white font-semibold">₹{totalSpent}</td>
-                                                            <td className="py-3 px-4 dark:text-gray-400">
-                                                                {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
-                                                            </td>
-                                                            <td className="py-3 px-4 dark:text-gray-400">
-                                                                {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                {users.length === 0 ? (
+                                    <div className="text-center py-12">
+                                        <div className="text-6xl mb-4">👥</div>
+                                        <h3 className="text-xl font-semibold dark:text-white mb-2">No Customers Yet</h3>
+                                        <p className="text-gray-500 dark:text-gray-400">Customer data will appear here when users register.</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        {/* Mobile Cards View */}
+                                        <div className="block sm:hidden space-y-4">
+                                            {users.map((user) => {
+                                                const userOrders = orders.filter(order => order.email === user.email);
+                                                const totalOrders = userOrders.length;
+                                                const totalSpent = userOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+                                                const deliveredOrders = userOrders.filter(order => order.status === 'delivered').length;
+                                                const avgOrderValue = totalOrders > 0 ? (totalSpent / totalOrders) : 0;
+                                                
+                                                return (
+                                                    <div
+                                                        key={user.id}
+                                                        className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow"
+                                                    >
+                                                        <div className="flex items-start justify-between mb-3">
+                                                            <div>
+                                                                <h3 className="font-bold dark:text-white text-lg">{user.name}</h3>
+                                                                <p className="text-gray-600 dark:text-gray-400 text-sm break-all">{user.email}</p>
+                                                                <p className="text-gray-600 dark:text-gray-400 text-sm">{user.phone}</p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="text-primary font-bold text-lg">₹{totalSpent}</p>
+                                                                <p className="text-gray-500 dark:text-gray-400 text-xs">Total Spent</p>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div className="grid grid-cols-2 gap-4 mb-3">
+                                                            <div>
+                                                                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                                                    <strong>Orders:</strong> {totalOrders}
+                                                                </p>
+                                                                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                                                    <strong>Delivered:</strong> {deliveredOrders}
+                                                                </p>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                                                    <strong>Avg Order:</strong> ₹{avgOrderValue.toFixed(0)}
+                                                                </p>
+                                                                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                                                    <strong>Last Login:</strong> {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                            Joined: {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* Desktop Table View */}
+                                        <div className="hidden sm:block overflow-x-auto">
+                                            <table className="w-full">
+                                                <thead>
+                                                    <tr className="border-b border-gray-200 dark:border-gray-700">
+                                                        <th className="text-left py-3 px-4 font-semibold dark:text-white">
+                                                            Name
+                                                        </th>
+                                                        <th className="text-left py-3 px-4 font-semibold dark:text-white">
+                                                            Email
+                                                        </th>
+                                                        <th className="text-left py-3 px-4 font-semibold dark:text-white">
+                                                            Phone
+                                                        </th>
+                                                        <th className="text-left py-3 px-4 font-semibold dark:text-white">
+                                                            Total Orders
+                                                        </th>
+                                                        <th className="text-left py-3 px-4 font-semibold dark:text-white">
+                                                            Total Spent
+                                                        </th>
+                                                        <th className="text-left py-3 px-4 font-semibold dark:text-white">
+                                                            Last Login
+                                                        </th>
+                                                        <th className="text-left py-3 px-4 font-semibold dark:text-white">
+                                                            Account Created
+                                                        </th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {users.map((user) => {
+                                                        // Calculate user's order statistics
+                                                        const userOrders = orders.filter(order => order.email === user.email);
+                                                        const totalOrders = userOrders.length;
+                                                        const totalSpent = userOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+                                                        
+                                                        return (
+                                                            <tr key={user.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                                                <td className="py-3 px-4 dark:text-white font-semibold">{user.name}</td>
+                                                                <td className="py-3 px-4 dark:text-gray-400 max-w-xs truncate">{user.email}</td>
+                                                                <td className="py-3 px-4 dark:text-gray-400">{user.phone}</td>
+                                                                <td className="py-3 px-4 dark:text-white font-semibold">{totalOrders}</td>
+                                                                <td className="py-3 px-4 dark:text-white font-semibold">₹{totalSpent}</td>
+                                                                <td className="py-3 px-4 dark:text-gray-400">
+                                                                    {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+                                                                </td>
+                                                                <td className="py-3 px-4 dark:text-gray-400">
+                                                                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>
