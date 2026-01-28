@@ -4,19 +4,44 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-react';
-import { useCartStore } from '@/store/cartStore';
+import { useFirebaseCartStore } from '@/store/firebaseCartStore';
 import { useEmailAuth } from '@/contexts/EmailAuthContext';
 import toast from "@/lib/toast";
 import { useEffect, useState } from 'react';
 import ClientOnly from '@/components/ClientOnly';
+import { generateUserId } from '@/lib/firebaseHelpers';
 
 function CartContent() {
-    const { items, updateQuantity, removeItem, getTotalPrice, clearCart } = useCartStore();
+    const { items, updateQuantity, removeItem, getTotalPrice, clearCart, fetchCart, setUserId } = useFirebaseCartStore();
     const { currentUser: emailUser } = useEmailAuth();
+    const [isLoading, setIsLoading] = useState(true);
 
-    const handleRemoveItem = (id: string, name: string) => {
-        removeItem(id);
-        toast.success(`${name} removed from cart`);
+    // Load user cart when component mounts or user changes
+    useEffect(() => {
+        const loadCart = async () => {
+            if (emailUser?.email) {
+                setIsLoading(true);
+                setUserId(emailUser.email);
+                await fetchCart();
+                setIsLoading(false);
+            } else {
+                setIsLoading(false);
+            }
+        };
+        loadCart();
+    }, [emailUser, fetchCart, setUserId]);
+
+    const handleRemoveItem = async (id: string, name: string) => {
+        const result = await removeItem(id);
+        if (result) {
+            toast.success(`${name} removed from cart`);
+        } else {
+            toast.error('Failed to remove item');
+        }
+    };
+
+    const handleUpdateQuantity = async (id: string, newQuantity: number) => {
+        await updateQuantity(id, newQuantity);
     };
 
     const handleClearCart = () => {
@@ -25,9 +50,13 @@ function CartContent() {
             [
                 {
                     label: 'Clear Cart',
-                    onClick: () => {
-                        clearCart();
-                        toast.success('Cart cleared');
+                    onClick: async () => {
+                        const result = await clearCart();
+                        if (result) {
+                            toast.success('Cart cleared');
+                        } else {
+                            toast.error('Failed to clear cart');
+                        }
                     },
                     style: 'bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded'
                 },
@@ -47,6 +76,17 @@ function CartContent() {
             return "/login?redirect=/checkout";
         }
     };
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center py-20 px-4">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading your cart...</p>
+                </div>
+            </div>
+        );
+    }
 
     if (items.length === 0) {
         return (
@@ -134,9 +174,6 @@ function CartContent() {
                                                 <h3 className="font-bold text-base mb-1 truncate">
                                                     {item.name}
                                                 </h3>
-                                                <p className="text-gray-600 text-xs mb-2 line-clamp-2">
-                                                    {item.description}
-                                                </p>
                                                 <p className="text-red-500 font-bold text-lg">
                                                     ₹{item.price.toFixed(0)}
                                                 </p>
@@ -156,16 +193,16 @@ function CartContent() {
                                             <span className="text-sm text-gray-600">Quantity:</span>
                                             <div className="flex items-center space-x-3">
                                                 <button
-                                                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                                    onClick={() => handleUpdateQuantity(item.id, item.qty - 1)}
                                                     className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
                                                 >
                                                     <Minus className="w-3 h-3" />
                                                 </button>
                                                 <span className="font-bold text-base w-8 text-center">
-                                                    {item.quantity}
+                                                    {item.qty}
                                                 </span>
                                                 <button
-                                                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                                    onClick={() => handleUpdateQuantity(item.id, item.qty + 1)}
                                                     className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
                                                 >
                                                     <Plus className="w-3 h-3" />
@@ -191,9 +228,6 @@ function CartContent() {
                                             <h3 className="font-bold text-lg mb-1">
                                                 {item.name}
                                             </h3>
-                                            <p className="text-gray-600 text-sm mb-2 line-clamp-1">
-                                                {item.description}
-                                            </p>
                                             <p className="text-red-500 font-bold text-xl">
                                                 ₹{item.price.toFixed(0)}
                                             </p>
@@ -202,16 +236,16 @@ function CartContent() {
                                         {/* Quantity Controls */}
                                         <div className="flex items-center space-x-3">
                                             <button
-                                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                                onClick={() => handleUpdateQuantity(item.id, item.qty - 1)}
                                                 className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
                                             >
                                                 <Minus className="w-4 h-4" />
                                             </button>
                                             <span className="font-bold text-lg w-8 text-center">
-                                                {item.quantity}
+                                                {item.qty}
                                             </span>
                                             <button
-                                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                                onClick={() => handleUpdateQuantity(item.id, item.qty + 1)}
                                                 className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
                                             >
                                                 <Plus className="w-4 h-4" />

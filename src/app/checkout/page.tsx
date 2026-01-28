@@ -1,25 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, CreditCard, Smartphone, Banknote, Check } from 'lucide-react';
 import Link from 'next/link';
-import { useCartStore } from '@/store/cartStore';
-import { useOrderStore } from '@/store/orderStore';
+import { useFirebaseCartStore } from '@/store/firebaseCartStore';
+import { useFirebaseOrderStore } from '@/store/firebaseOrderStore';
 import { useEmailAuth } from '@/contexts/EmailAuthContext';
 import EmailProtectedRoute from '@/components/auth/EmailProtectedRoute';
 import toast from "@/lib/toast";
 import Image from 'next/image';
 import ClientOnly from '@/components/ClientOnly';
+import { generateUserId } from '@/lib/firebaseHelpers';
 
 function CheckoutContent() {
     const router = useRouter();
-    const { items, getTotalPrice, clearCart } = useCartStore();
-    const { addOrder } = useOrderStore();
+    const { items, getTotalPrice, clearCart, fetchCart, setUserId } = useFirebaseCartStore();
+    const { createOrder } = useFirebaseOrderStore();
     const { currentUser: emailUser } = useEmailAuth();
     const [isProcessing, setIsProcessing] = useState(false);
     const [orderPlaced, setOrderPlaced] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     const [formData, setFormData] = useState({
         name: emailUser?.name || '',
@@ -27,6 +29,32 @@ function CheckoutContent() {
         address: '',
         paymentMethod: 'cod',
     });
+
+    // Load user cart when component mounts
+    useEffect(() => {
+        const loadCart = async () => {
+            if (emailUser?.email) {
+                setIsLoading(true);
+                setUserId(emailUser.email);
+                await fetchCart();
+                setIsLoading(false);
+            } else {
+                setIsLoading(false);
+            }
+        };
+        loadCart();
+    }, [emailUser, fetchCart, setUserId]);
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center py-20">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading checkout...</p>
+                </div>
+            </div>
+        );
+    }
 
     if (items.length === 0 && !orderPlaced) {
         router.push('/cart');
@@ -61,33 +89,42 @@ function CheckoutContent() {
 
         setIsProcessing(true);
 
-        // Simulate order processing
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        try {
+            // Create order object
+            const orderData = {
+                userId: generateUserId(emailUser.email),
+                customer: formData.name,
+                phone: formData.phone,
+                email: emailUser.email,
+                address: formData.address,
+                items: items.map(item => ({
+                    id: item.id,
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.qty,
+                })),
+                total: finalTotal,
+                paymentMethod: formData.paymentMethod,
+            };
 
-        // Create order object
-        const orderData = {
-            customer: formData.name,
-            phone: formData.phone,
-            email: emailUser.email,
-            address: formData.address,
-            items: items.map(item => ({
-                id: item.id,
-                name: item.name,
-                price: item.price,
-                quantity: item.quantity,
-            })),
-            total: finalTotal,
-            status: 'Pending' as const,
-            paymentMethod: formData.paymentMethod,
-        };
-
-        // Add order to store
-        addOrder(orderData);
-
-        setIsProcessing(false);
-        setOrderPlaced(true);
-        clearCart();
-        toast.success('Order placed successfully!');
+            // Place order in Firebase
+            const result = await createOrder(orderData);
+            
+            if (result.success) {
+                // Clear user cart
+                await clearCart();
+                
+                setOrderPlaced(true);
+                toast.success('Order placed successfully!');
+            } else {
+                toast.error('Failed to place order. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error placing order:', error);
+            toast.error('Failed to place order. Please try again.');
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     if (orderPlaced) {
@@ -291,10 +328,10 @@ function CheckoutContent() {
                                 {items.map((item) => (
                                     <div key={item.id} className="flex justify-between text-gray-600">
                                         <span>
-                                            {item.name} x {item.quantity}
+                                            {item.name} x {item.qty}
                                         </span>
                                         <span className="font-semibold">
-                                            ₹{(item.price * item.quantity).toFixed(0)}
+                                            ₹{(item.price * item.qty).toFixed(0)}
                                         </span>
                                     </div>
                                 ))}

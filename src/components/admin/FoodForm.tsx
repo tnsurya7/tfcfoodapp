@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, Upload } from 'lucide-react';
 import { FoodItem } from '@/store/cartStore';
-import { useFoodStore } from '@/store/foodStore';
 import toast from 'react-hot-toast';
+import { addFood, updateFood } from '@/lib/firebaseHelpers';
 
 interface FoodFormProps {
     food?: FoodItem;
@@ -14,7 +14,7 @@ interface FoodFormProps {
 }
 
 export default function FoodForm({ food, onClose, onSave }: FoodFormProps) {
-    const { addFood, updateFood } = useFoodStore();
+    const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -41,7 +41,7 @@ export default function FoodForm({ food, onClose, onSave }: FoodFormProps) {
         }
     }, [food]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
         if (!formData.name || !formData.description || !formData.image || formData.price <= 0) {
@@ -49,16 +49,36 @@ export default function FoodForm({ food, onClose, onSave }: FoodFormProps) {
             return;
         }
 
-        if (food) {
-            updateFood(food.id, formData);
-            toast.success('Food item updated successfully!');
-        } else {
-            addFood(formData);
-            toast.success('Food item added successfully!');
-        }
+        setLoading(true);
 
-        onSave();
-        onClose();
+        try {
+            if (food) {
+                // Update existing food
+                const result = await updateFood(food.id, formData);
+                if (result.success) {
+                    toast.success('Food item updated successfully!');
+                    onSave();
+                    onClose();
+                } else {
+                    toast.error(result.error || 'Failed to update food item');
+                }
+            } else {
+                // Add new food
+                const result = await addFood(formData);
+                if (result.success) {
+                    toast.success('Food item added successfully!');
+                    onSave();
+                    onClose();
+                } else {
+                    toast.error(result.error || 'Failed to add food item');
+                }
+            }
+        } catch (error) {
+            console.error('Error saving food:', error);
+            toast.error('Failed to save food item');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const categories = [
@@ -232,9 +252,17 @@ export default function FoodForm({ food, onClose, onSave }: FoodFormProps) {
                         </button>
                         <button
                             type="submit"
-                            className="btn-primary flex-1"
+                            disabled={loading}
+                            className="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex-1 flex items-center justify-center"
                         >
-                            {food ? 'Update Food' : 'Add Food'}
+                            {loading ? (
+                                <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                    {food ? 'Updating...' : 'Adding...'}
+                                </>
+                            ) : (
+                                food ? 'Update Food' : 'Add Food'
+                            )}
                         </button>
                     </div>
                 </form>

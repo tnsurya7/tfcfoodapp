@@ -19,24 +19,40 @@ import {
 import Link from 'next/link';
 import { useEmailAuth } from '@/contexts/EmailAuthContext';
 import EmailProtectedRoute from '@/components/auth/EmailProtectedRoute';
-import { useOrderStore } from '@/store/orderStore';
+import { useFirebaseOrderStore } from '@/store/firebaseOrderStore';
 import OrderTracker from '@/components/orders/OrderTracker';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import toast from "@/lib/toast";
 import ClientOnly from '@/components/ClientOnly';
+import { generateUserId } from '@/lib/firebaseHelpers';
 
 function ProfileContent() {
     const router = useRouter();
     const { currentUser: emailUser, logout } = useEmailAuth();
-    const { orders } = useOrderStore();
+    const { orders, fetchUserOrders } = useFirebaseOrderStore();
     const [activeTab, setActiveTab] = useState<'profile' | 'orders'>('orders');
+    const [isLoading, setIsLoading] = useState(true);
 
     // Enable order notifications
     useOrderNotifications();
 
-    // Filter orders for current user
+    // Load user orders when component mounts
+    useEffect(() => {
+        const loadOrders = async () => {
+            if (emailUser?.email) {
+                setIsLoading(true);
+                await fetchUserOrders(emailUser.email);
+                setIsLoading(false);
+            } else {
+                setIsLoading(false);
+            }
+        };
+        loadOrders();
+    }, [emailUser, fetchUserOrders]);
+
+    // Filter orders for current user (additional client-side filtering)
     const userOrders = orders.filter(order => 
-        order.email === emailUser?.email
+        order.email === emailUser?.email || order.userId === generateUserId(emailUser?.email || '')
     ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     const handleLogout = () => {
@@ -92,6 +108,17 @@ function ProfileContent() {
             return `${Math.floor(diffInMinutes / 1440)} days ago`;
         }
     };
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center py-20">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading your profile...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 py-8">
@@ -252,10 +279,10 @@ function ProfileContent() {
                                                         {order.items.map((item, index) => (
                                                             <div key={index} className="flex justify-between items-center text-sm">
                                                                 <span className="text-gray-600">
-                                                                    {item.name} x {item.quantity}
+                                                                    {item.name} x {item.qty}
                                                                 </span>
                                                                 <span className="font-semibold">
-                                                                    ₹{(item.price * item.quantity).toFixed(0)}
+                                                                    ₹{(item.price * item.qty).toFixed(0)}
                                                                 </span>
                                                             </div>
                                                         ))}
@@ -283,7 +310,7 @@ function ProfileContent() {
                                                     <OrderTracker 
                                                         status={order.status}
                                                         createdAt={order.createdAt}
-                                                        statusHistory={order.statusHistory || {}}
+                                                        statusHistory={{}}
                                                     />
                                                 </div>
                                             </motion.div>

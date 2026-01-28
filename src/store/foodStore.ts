@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { FoodItem } from './cartStore';
-import { sampleFoods } from '@/data/sampleData';
 
 interface FoodStore {
     foods: FoodItem[];
@@ -10,13 +9,12 @@ interface FoodStore {
     deleteFood: (id: string) => void;
     getFoodById: (id: string) => FoodItem | undefined;
     getFoodsByCategory: (category: string) => FoodItem[];
-    resetToSampleData: () => void;
 }
 
 export const useFoodStore = create<FoodStore>()(
     persist(
         (set, get) => ({
-            foods: sampleFoods,
+            foods: [],
             
             addFood: (food) => {
                 const newFood: FoodItem = {
@@ -48,10 +46,6 @@ export const useFoodStore = create<FoodStore>()(
             
             getFoodsByCategory: (category) => {
                 return get().foods.filter((food) => food.category === category);
-            },
-            
-            resetToSampleData: () => {
-                set({ foods: sampleFoods });
             },
         }),
         {

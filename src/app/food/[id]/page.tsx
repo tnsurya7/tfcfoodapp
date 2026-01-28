@@ -1,24 +1,48 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useState, use, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, Minus, Plus, ShoppingCart, Star, Clock } from 'lucide-react';
-import { sampleFoods } from '@/data/sampleData';
-import { useFoodStore } from '@/store/foodStore';
-import { useCartStore } from '@/store/cartStore';
-import toast from 'react-hot-toast';
+import { useFirebaseFoodStore } from '@/store/firebaseFoodStore';
+import { useFirebaseCartStore } from '@/store/firebaseCartStore';
+import { useEmailAuth } from '@/contexts/EmailAuthContext';
+import { generateUserId } from '@/lib/firebaseHelpers';
+import toast from '@/lib/toast';
 import { useRouter } from 'next/navigation';
 
 export default function FoodDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params);
     const router = useRouter();
     const [quantity, setQuantity] = useState(1);
-    const addItem = useCartStore((state) => state.addItem);
-    const { foods } = useFoodStore();
+    const [isLoading, setIsLoading] = useState(true);
+    const { addItem, setUserId } = useFirebaseCartStore();
+    const { foods, fetchFoods } = useFirebaseFoodStore();
+    const { currentUser: emailUser } = useEmailAuth();
+
+    // Load foods when component mounts
+    useEffect(() => {
+        const loadData = async () => {
+            setIsLoading(true);
+            await fetchFoods();
+            setIsLoading(false);
+        };
+        loadData();
+    }, [fetchFoods]);
 
     const food = foods.find((f) => f.id === resolvedParams.id);
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading food details...</p>
+                </div>
+            </div>
+        );
+    }
 
     if (!food) {
         return (
@@ -33,10 +57,24 @@ export default function FoodDetailsPage({ params }: { params: Promise<{ id: stri
         );
     }
 
-    const handleAddToCart = () => {
-        for (let i = 0; i < quantity; i++) {
-            addItem(food);
+    const handleAddToCart = async () => {
+        if (!emailUser?.email) {
+            toast.error('Please login to add items to cart');
+            router.push('/login');
+            return;
         }
+
+        setUserId(emailUser.email);
+        
+        // Add items one by one to maintain quantity
+        for (let i = 0; i < quantity; i++) {
+            const result = await addItem(food);
+            if (!result) {
+                toast.error('Failed to add item to cart');
+                return;
+            }
+        }
+        
         toast.success(`${quantity} x ${food.name} added to cart!`);
         router.push('/cart');
     };

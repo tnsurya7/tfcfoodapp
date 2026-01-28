@@ -4,11 +4,31 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Star, Clock } from 'lucide-react';
-import { useFoodStore } from '@/store/foodStore';
+import { useFirebaseFoodStore } from '@/store/firebaseFoodStore';
+import { useEffect } from 'react';
 
 export default function TodaysSpecial() {
-    const { foods } = useFoodStore();
+    const { foods, fetchFoods } = useFirebaseFoodStore();
+    
+    // Load foods when component mounts
+    useEffect(() => {
+        fetchFoods();
+    }, [fetchFoods]);
+    
     const specialItem = foods.find((food) => food.isSpecial);
+
+    if (foods.length === 0) {
+        return (
+            <section className="py-16 bg-gradient-to-br from-secondary/10 to-primary/10">
+                <div className="container mx-auto px-4">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
+                        <p className="text-gray-600">Loading today's special...</p>
+                    </div>
+                </div>
+            </section>
+        );
+    }
 
     if (!specialItem) return null;
 

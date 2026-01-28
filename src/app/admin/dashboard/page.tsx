@@ -17,13 +17,20 @@ import {
 import Link from 'next/link';
 import toast from "@/lib/toast";
 import Image from 'next/image';
-import { useFoodStore } from '@/store/foodStore';
-import { useOrderStore } from '@/store/orderStore';
-import { useCustomerStore } from '@/store/customerStore';
 import { FoodItem } from '@/store/cartStore';
 import FoodForm from '@/components/admin/FoodForm';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { 
+    getAllFoods, 
+    deleteFood as deleteFirebaseFood,
+    getAllOrders,
+    updateOrderStatusWithTimestamp,
+    deleteOrder as deleteFirebaseOrder,
+    listenToFoods,
+    listenToOrders,
+    getDatabaseStats
+} from '@/lib/firebaseHelpers';
 
 export default function AdminDashboard() {
     const router = useRouter();
@@ -31,10 +38,17 @@ export default function AdminDashboard() {
     const [activeTab, setActiveTab] = useState<'foods' | 'orders' | 'customers'>('foods');
     const [showFoodForm, setShowFoodForm] = useState(false);
     const [editingFood, setEditingFood] = useState<FoodItem | null>(null);
+    const [loading, setLoading] = useState(true);
     
-    const { foods, deleteFood } = useFoodStore();
-    const { orders, updateOrderStatus, deleteOrder, getTotalRevenue } = useOrderStore();
-    const { customers, getTotalCustomers } = useCustomerStore();
+    // Firebase data states
+    const [foods, setFoods] = useState<FoodItem[]>([]);
+    const [orders, setOrders] = useState<any[]>([]);
+    const [stats, setStats] = useState({
+        totalCustomers: 0,
+        totalProducts: 0,
+        totalOrders: 0,
+        totalRevenue: 0
+    });
 
     useEffect(() => {
         const loggedIn = localStorage.getItem('adminLoggedIn');
@@ -42,8 +56,60 @@ export default function AdminDashboard() {
             router.push('/admin');
         } else {
             setIsLoggedIn(true);
+            loadData();
         }
     }, [router]);
+
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            
+            // Load foods
+            const foodsResult = await getAllFoods();
+            if (foodsResult.success) {
+                setFoods(foodsResult.foods || []);
+            }
+
+            // Load orders
+            const ordersResult = await getAllOrders();
+            if (ordersResult.success) {
+                setOrders(ordersResult.orders || []);
+            }
+
+            // Load statistics
+            const statsResult = await getDatabaseStats();
+            if (statsResult.success) {
+                const dbStats = statsResult.stats || { totalUsers: 0, totalFoods: 0, totalOrders: 0, totalRevenue: 0 };
+                setStats({
+                    totalCustomers: dbStats.totalUsers,
+                    totalProducts: dbStats.totalFoods,
+                    totalOrders: dbStats.totalOrders,
+                    totalRevenue: dbStats.totalRevenue
+                });
+            }
+
+            // Set up real-time listeners
+            const unsubscribeFoods = listenToFoods((updatedFoods: any[]) => {
+                setFoods(updatedFoods);
+            });
+
+            const unsubscribeOrders = listenToOrders((updatedOrders: any[]) => {
+                setOrders(updatedOrders);
+            });
+
+            // Cleanup listeners on unmount
+            return () => {
+                if (unsubscribeFoods) unsubscribeFoods();
+                if (unsubscribeOrders) unsubscribeOrders();
+            };
+
+        } catch (error) {
+            console.error('Error loading admin data:', error);
+            toast.error('Failed to load admin data');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleLogout = () => {
         localStorage.removeItem('adminLoggedIn');
@@ -51,15 +117,24 @@ export default function AdminDashboard() {
         router.push('/admin');
     };
 
-    const handleDeleteFood = (id: string, name: string) => {
+    const handleDeleteFood = async (id: string, name: string) => {
         toast.action(
             `Are you sure you want to delete "${name}"?`,
             [
                 {
                     label: 'Delete',
-                    onClick: () => {
-                        deleteFood(id);
-                        toast.success('Food item deleted successfully');
+                    onClick: async () => {
+                        try {
+                            const result = await deleteFirebaseFood(id);
+                            if (result.success) {
+                                toast.success('Food item deleted successfully');
+                                // Foods will update automatically via listener
+                            } else {
+                                toast.error(result.error || 'Failed to delete food item');
+                            }
+                        } catch (error) {
+                            toast.error('Failed to delete food item');
+                        }
                     },
                     style: 'bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded'
                 },
@@ -82,20 +157,38 @@ export default function AdminDashboard() {
         setShowFoodForm(true);
     };
 
-    const handleOrderStatusChange = (orderId: string, newStatus: string) => {
-        updateOrderStatus(orderId, newStatus as any);
-        toast.success('Order status updated');
+    const handleOrderStatusChange = async (orderId: string, newStatus: string) => {
+        try {
+            const result = await updateOrderStatusWithTimestamp(orderId, newStatus);
+            if (result.success) {
+                toast.success('Order status updated');
+                // Orders will update automatically via listener
+            } else {
+                toast.error(result.error || 'Failed to update order status');
+            }
+        } catch (error) {
+            toast.error('Failed to update order status');
+        }
     };
 
-    const handleDeleteOrder = (orderId: string) => {
+    const handleDeleteOrder = async (orderId: string) => {
         toast.action(
             'Are you sure you want to delete this order?',
             [
                 {
                     label: 'Delete',
-                    onClick: () => {
-                        deleteOrder(orderId);
-                        toast.success('Order deleted successfully');
+                    onClick: async () => {
+                        try {
+                            const result = await deleteFirebaseOrder(orderId);
+                            if (result.success) {
+                                toast.success('Order deleted successfully');
+                                // Orders will update automatically via listener
+                            } else {
+                                toast.error(result.error || 'Failed to delete order');
+                            }
+                        } catch (error) {
+                            toast.error('Failed to delete order');
+                        }
                     },
                     style: 'bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded'
                 },
@@ -126,17 +219,25 @@ export default function AdminDashboard() {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto"></div>
                     <p className="mt-4 text-gray-600">Loading...</p>
                 </div>
             </div>
         );
     }
 
-    const totalRevenue = getTotalRevenue();
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Loading admin dashboard...</p>
+                </div>
+            </div>
+        );
+    }
+
     const pendingOrders = orders.filter(order => order.status === 'Pending').length;
-    const totalOrders = orders.length;
-    const totalCustomers = getTotalCustomers();
 
     const generatePDFReport = () => {
         const doc = new jsPDF();
@@ -153,10 +254,10 @@ export default function AdminDashboard() {
         doc.text('Summary Statistics', 20, 55);
         
         doc.setFontSize(12);
-        doc.text(`Total Products: ${foods.length}`, 20, 70);
-        doc.text(`Total Orders: ${totalOrders}`, 20, 80);
-        doc.text(`Total Revenue: Rs. ${totalRevenue.toLocaleString()}`, 20, 90);
-        doc.text(`Total Customers: ${totalCustomers}`, 20, 100);
+        doc.text(`Total Products: ${stats.totalProducts}`, 20, 70);
+        doc.text(`Total Orders: ${stats.totalOrders}`, 20, 80);
+        doc.text(`Total Revenue: Rs. ${stats.totalRevenue.toLocaleString()}`, 20, 90);
+        doc.text(`Total Customers: ${stats.totalCustomers}`, 20, 100);
         doc.text(`Pending Orders: ${pendingOrders}`, 20, 110);
         
         // Orders Table
@@ -183,57 +284,35 @@ export default function AdminDashboard() {
             });
         }
         
-        // Customers Table
-        if (customers.length > 0) {
-            const finalY = (doc as any).lastAutoTable?.finalY || 200;
-            
-            doc.setFontSize(16);
-            doc.text('Customer List', 20, finalY + 20);
-            
-            const customerData = customers.map(customer => [
-                customer.name,
-                customer.phone,
-                customer.totalOrders.toString(),
-                `Rs. ${customer.totalSpent}`,
-                new Date(customer.createdAt).toLocaleDateString()
-            ]);
-            
-            autoTable(doc, {
-                head: [['Name', 'Phone', 'Orders', 'Total Spent', 'Joined']],
-                body: customerData,
-                startY: finalY + 30,
-                styles: { fontSize: 8 },
-                headStyles: { fillColor: [211, 47, 47] }
-            });
-        }
+        // Skip customers table - not implemented yet
         
         // Save the PDF
         doc.save(`TFC-Dashboard-Report-${new Date().toISOString().split('T')[0]}.pdf`);
     };
 
-    const stats = [
+    const statsCards = [
         {
             icon: <Package className="w-8 h-8" />,
             label: 'Total Products',
-            value: foods.length,
+            value: stats.totalProducts,
             color: 'bg-blue-500',
         },
         {
             icon: <ShoppingBag className="w-8 h-8" />,
             label: 'Total Orders',
-            value: totalOrders,
+            value: stats.totalOrders,
             color: 'bg-green-500',
         },
         {
             icon: <DollarSign className="w-8 h-8" />,
             label: 'Revenue',
-            value: `Rs. ${totalRevenue.toLocaleString()}`,
+            value: `Rs. ${stats.totalRevenue.toLocaleString()}`,
             color: 'bg-yellow-500',
         },
         {
             icon: <TrendingUp className="w-8 h-8" />,
             label: 'Total Customers',
-            value: totalCustomers,
+            value: stats.totalCustomers,
             color: 'bg-purple-500',
         },
     ];
@@ -276,7 +355,7 @@ export default function AdminDashboard() {
             <div className="container mx-auto px-4 py-8">
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    {stats.map((stat, index) => (
+                    {statsCards.map((stat, index) => (
                         <motion.div
                             key={index}
                             initial={{ opacity: 0, y: 30 }}
@@ -310,7 +389,7 @@ export default function AdminDashboard() {
                                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
                                     }`}
                             >
-                                Food Items ({foods.length})
+                                Food Items ({stats.totalProducts})
                             </button>
                             <button
                                 onClick={() => setActiveTab('orders')}
@@ -328,7 +407,7 @@ export default function AdminDashboard() {
                                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
                                     }`}
                             >
-                                Customers ({customers.length})
+                                Customers (0)
                             </button>
                         </div>
                     </div>
@@ -492,7 +571,7 @@ export default function AdminDashboard() {
                                                         <div className="text-sm">
                                                             <strong className="text-gray-700 dark:text-gray-300">Items:</strong>
                                                             <ul className="mt-1 space-y-1">
-                                                                {order.items.map((item, index) => (
+                                                                {order.items.map((item: any, index: number) => (
                                                                     <li key={index} className="text-gray-600 dark:text-gray-400">
                                                                         {item.name} x {item.quantity} - ₹{item.price * item.quantity}
                                                                     </li>
@@ -557,39 +636,13 @@ export default function AdminDashboard() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {customers.map((customer) => (
-                                                <tr
-                                                    key={customer.id}
-                                                    className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                                                >
-                                                    <td className="py-3 px-4 dark:text-white font-medium">
-                                                        {customer.name}
-                                                    </td>
-                                                    <td className="py-3 px-4 dark:text-gray-400">
-                                                        {customer.phone}
-                                                    </td>
-                                                    <td className="py-3 px-4 dark:text-white">
-                                                        <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 px-2 py-1 rounded-full text-sm">
-                                                            {customer.totalOrders}
-                                                        </span>
-                                                    </td>
-                                                    <td className="py-3 px-4 dark:text-white font-semibold">
-                                                        ₹{customer.totalSpent.toLocaleString()}
-                                                    </td>
-                                                    <td className="py-3 px-4 dark:text-gray-400 text-sm">
-                                                        {new Date(customer.createdAt).toLocaleDateString()}
-                                                    </td>
-                                                    <td className="py-3 px-4 dark:text-gray-400 text-sm">
-                                                        {formatTime(customer.lastLogin)}
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                            {/* Customer data not implemented yet */}
                                         </tbody>
                                     </table>
                                     
-                                    {customers.length === 0 && (
+                                    {true && (
                                         <div className="text-center py-8">
-                                            <p className="text-gray-500 dark:text-gray-400">No customers found</p>
+                                            <p className="text-gray-500 dark:text-gray-400">Customer management coming soon</p>
                                         </div>
                                     )}
                                 </div>

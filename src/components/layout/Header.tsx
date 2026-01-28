@@ -4,17 +4,31 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ShoppingCart, Menu, X, Search, LogOut, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { useCartStore } from '@/store/cartStore';
+import { useFirebaseCartStore } from '@/store/firebaseCartStore';
 import { useEmailAuth } from '@/contexts/EmailAuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { generateUserId } from '@/lib/firebaseHelpers';
 import toast from "@/lib/toast";
 
 export default function Header() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const [mounted, setMounted] = useState(false);
-    const totalItems = useCartStore((state) => state.getTotalItems());
+    const { items, fetchCart, setUserId } = useFirebaseCartStore();
     const { currentUser: emailUser, logout: emailLogout } = useEmailAuth();
+
+    // Load user cart when user changes
+    useEffect(() => {
+        const loadCart = async () => {
+            if (emailUser?.email) {
+                setUserId(emailUser.email);
+                await fetchCart();
+            }
+        };
+        loadCart();
+    }, [emailUser, fetchCart, setUserId]);
+
+    const totalItems = items.reduce((sum, item) => sum + item.qty, 0);
 
     const handleLogout = async () => {
         try {

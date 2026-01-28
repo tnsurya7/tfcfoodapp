@@ -1,6 +1,4 @@
 import { initializeDefaultAdmin, getDatabaseStats } from './firebaseHelpers';
-import { sampleFoods } from '@/data/sampleData';
-import { addFood } from './firebaseHelpers';
 
 // Initialize Firebase database with default data
 export const initializeFirebaseDatabase = async () => {
@@ -16,23 +14,8 @@ export const initializeFirebaseDatabase = async () => {
             console.log('ℹ️ Admin already exists or error:', adminResult.error);
         }
         
-        // 2. Check if foods exist, if not add sample foods
-        console.log('🍔 Checking food items...');
-        const stats = await getDatabaseStats();
-        if (stats.success && stats.stats.totalFoods === 0) {
-            console.log('📦 Adding sample food items...');
-            
-            for (const food of sampleFoods) {
-                const { id, ...foodData } = food; // Remove the id field
-                await addFood(foodData);
-            }
-            
-            console.log(`✅ Added ${sampleFoods.length} sample food items`);
-        } else {
-            console.log(`ℹ️ Database already has ${stats.stats?.totalFoods || 0} food items`);
-        }
-        
-        // 3. Display current stats
+        // 2. Display current stats
+        console.log('📊 Checking database statistics...');
         const finalStats = await getDatabaseStats();
         if (finalStats.success) {
             console.log('📊 Database Statistics:');

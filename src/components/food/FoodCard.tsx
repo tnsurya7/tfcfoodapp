@@ -4,21 +4,37 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Star } from 'lucide-react';
-import { FoodItem, useCartStore } from '@/store/cartStore';
-import toast from 'react-hot-toast';
+import { FoodItem } from '@/store/cartStore';
+import { useFirebaseCartStore } from '@/store/firebaseCartStore';
+import { useEmailAuth } from '@/contexts/EmailAuthContext';
+import { generateUserId } from '@/lib/firebaseHelpers';
+import toast from '@/lib/toast';
 
 interface FoodCardProps {
     food: FoodItem;
 }
 
 export default function FoodCard({ food }: FoodCardProps) {
-    const addItem = useCartStore((state) => state.addItem);
+    const { addItem, setUserId } = useFirebaseCartStore();
+    const { currentUser: emailUser } = useEmailAuth();
 
-    const handleAddToCart = (e: React.MouseEvent) => {
+    const handleAddToCart = async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        addItem(food);
-        toast.success(`${food.name} added to cart!`);
+        
+        if (!emailUser?.email) {
+            toast.error('Please login to add items to cart');
+            return;
+        }
+
+        setUserId(emailUser.email);
+        const result = await addItem(food);
+        
+        if (result) {
+            toast.success(`${food.name} added to cart!`);
+        } else {
+            toast.error('Failed to add item to cart');
+        }
     };
 
     return (
