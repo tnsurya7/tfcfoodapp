@@ -319,24 +319,18 @@ export const getDatabaseStats = async () => {
     
     const foods = await get(ref(database, "tfc/foods"));
     const orders = await get(ref(database, "tfc/orders"));
+    const users = await get(ref(database, "tfc/users"));
 
     let totalRevenue = 0;
-    let uniqueCustomers = 0;
 
     if (orders.exists()) {
         const ordersData = orders.val();
-        const customerEmails = new Set();
         
         Object.values(ordersData).forEach(order => {
             if (order.status?.toLowerCase() === "delivered") {
                 totalRevenue += Number(order.total || 0);
             }
-            if (order.email) {
-                customerEmails.add(order.email);
-            }
         });
-        
-        uniqueCustomers = customerEmails.size;
     }
 
     return {
@@ -344,7 +338,7 @@ export const getDatabaseStats = async () => {
         stats: {
             totalFoods: foods.exists() ? Object.keys(foods.val()).length : 0,
             totalOrders: orders.exists() ? Object.keys(orders.val()).length : 0,
-            totalUsers: uniqueCustomers,
+            totalUsers: users.exists() ? Object.keys(users.val()).length : 0,
             totalRevenue
         }
     };
@@ -373,24 +367,18 @@ export const getAdminStats = async () => {
     
     const foods = await get(ref(database, "tfc/foods"));
     const orders = await get(ref(database, "tfc/orders"));
+    const users = await get(ref(database, "tfc/users"));
 
     let revenue = 0;
-    let uniqueCustomers = 0;
 
     if (orders.exists()) {
         const ordersData = orders.val();
-        const customerEmails = new Set();
         
         Object.values(ordersData).forEach(order => {
             if (order.status?.toLowerCase() === "delivered") {
                 revenue += Number(order.total || 0);
             }
-            if (order.email) {
-                customerEmails.add(order.email);
-            }
         });
-        
-        uniqueCustomers = customerEmails.size;
     }
 
     return {
@@ -398,7 +386,7 @@ export const getAdminStats = async () => {
         stats: {
             foods: foods.exists() ? Object.keys(foods.val()).length : 0,
             orders: orders.exists() ? Object.keys(orders.val()).length : 0,
-            users: uniqueCustomers,
+            users: users.exists() ? Object.keys(users.val()).length : 0,
             revenue
         }
     };
