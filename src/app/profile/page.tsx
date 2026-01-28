@@ -72,7 +72,8 @@ function ProfileContent() {
     };
 
     const getStatusColor = (status: string) => {
-        switch (status.toLowerCase()) {
+        const lowerStatus = status.toLowerCase();
+        switch (lowerStatus) {
             case 'pending':
                 return 'bg-yellow-100 text-yellow-800';
             case 'preparing':
@@ -89,7 +90,8 @@ function ProfileContent() {
     };
 
     const getStatusIcon = (status: string) => {
-        switch (status.toLowerCase()) {
+        const lowerStatus = status.toLowerCase();
+        switch (lowerStatus) {
             case 'pending':
                 return <Clock className="w-4 h-4" />;
             case 'preparing':
@@ -286,16 +288,20 @@ function ProfileContent() {
                                                 <div className="mb-4">
                                                     <h4 className="font-semibold text-gray-700 mb-2">Items:</h4>
                                                     <div className="space-y-2">
-                                                        {order.items.map((item: any, index: number) => (
-                                                            <div key={index} className="flex justify-between items-center text-sm">
-                                                                <span className="text-gray-600">
-                                                                    {item.name} x {item.qty}
-                                                                </span>
-                                                                <span className="font-semibold">
-                                                                    ₹{(item.price * item.qty).toFixed(0)}
-                                                                </span>
-                                                            </div>
-                                                        ))}
+                                                        {order.items.map((item: any, index: number) => {
+                                                            const price = Number(item.price) || 0;
+                                                            const qty = Number(item.qty) || 1;
+                                                            return (
+                                                                <div key={index} className="flex justify-between items-center text-sm">
+                                                                    <span className="text-gray-600">
+                                                                        {item.name} x {qty}
+                                                                    </span>
+                                                                    <span className="font-semibold">
+                                                                        ₹{(price * qty).toFixed(0)}
+                                                                    </span>
+                                                                </div>
+                                                            );
+                                                        })}
                                                     </div>
                                                 </div>
 

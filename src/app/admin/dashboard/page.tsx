@@ -137,7 +137,7 @@ export default function AdminDashboard() {
                 // Update order stats from Firebase data
                 const totalOrders = updatedOrders.length;
                 const totalRevenue = updatedOrders
-                    .filter(order => order.status === 'delivered')
+                    .filter(order => order.status?.toLowerCase() === 'delivered')
                     .reduce((sum, order) => sum + (order.total || 0), 0);
                 
                 // Calculate unique customers from orders
@@ -291,7 +291,7 @@ export default function AdminDashboard() {
         );
     }
 
-    const pendingOrders = orders.filter(order => order.status === 'Pending').length;
+    const pendingOrders = orders.filter(order => order.status?.toLowerCase() === 'pending').length;
 
     const generatePDFReport = () => {
         const doc = new jsPDF();
@@ -589,10 +589,10 @@ export default function AdminDashboard() {
                                                         </h3>
                                                         <span
                                                             className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                                                order.status === 'Pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
-                                                                order.status === 'Preparing' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' :
-                                                                order.status === 'Out for Delivery' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' :
-                                                                order.status === 'Delivered' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' :
+                                                                order.status?.toLowerCase() === 'pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
+                                                                order.status?.toLowerCase() === 'preparing' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' :
+                                                                order.status?.toLowerCase() === 'out for delivery' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' :
+                                                                order.status?.toLowerCase() === 'delivered' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' :
                                                                 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
                                                             }`}
                                                         >
@@ -651,11 +651,11 @@ export default function AdminDashboard() {
                                                         onChange={(e) => handleOrderStatusChange(order.id, e.target.value)}
                                                         className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
                                                     >
-                                                        <option value="Pending">Pending</option>
-                                                        <option value="Preparing">Preparing</option>
-                                                        <option value="Out for Delivery">Out for Delivery</option>
-                                                        <option value="Delivered">Delivered</option>
-                                                        <option value="Cancelled">Cancelled</option>
+                                                        <option value="pending">Pending</option>
+                                                        <option value="preparing">Preparing</option>
+                                                        <option value="out for delivery">Out for Delivery</option>
+                                                        <option value="delivered">Delivered</option>
+                                                        <option value="cancelled">Cancelled</option>
                                                     </select>
                                                     <button
                                                         onClick={() => handleDeleteOrder(order.id)}

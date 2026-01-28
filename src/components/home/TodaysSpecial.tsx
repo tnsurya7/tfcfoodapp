@@ -4,20 +4,30 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Star, Clock } from 'lucide-react';
-import { useFirebaseFoodStore } from '@/store/firebaseFoodStore';
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { listenToFoods } from '@/lib/firebaseHelpers';
+import { FoodItem } from '@/store/cartStore';
 
 export default function TodaysSpecial() {
-    const { foods, fetchFoods } = useFirebaseFoodStore();
+    const [foods, setFoods] = useState<FoodItem[]>([]);
+    const [loading, setLoading] = useState(true);
     
-    // Load foods when component mounts
     useEffect(() => {
-        fetchFoods();
-    }, [fetchFoods]);
-    
-    const specialItem = foods.find((food) => food.special);
+        // Set up real-time listener for foods
+        const unsubscribe = listenToFoods((updatedFoods: any[]) => {
+            setFoods(updatedFoods);
+            setLoading(false);
+        });
 
-    if (foods.length === 0) {
+        // Cleanup listener on unmount
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+    }, []);
+    
+    const specialItem = foods.find((food) => food.special === true);
+
+    if (loading) {
         return (
             <section className="py-16 bg-gradient-to-br from-secondary/10 to-primary/10">
                 <div className="container mx-auto px-4">

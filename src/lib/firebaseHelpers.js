@@ -128,13 +128,11 @@ export const getAllFoods = async () => {
         const snapshot = await get(foodsRef);
         
         if (snapshot.exists()) {
-            const foods = [];
-            snapshot.forEach((childSnapshot) => {
-                foods.push({
-                    id: childSnapshot.key,
-                    ...childSnapshot.val()
-                });
-            });
+            const foodsData = snapshot.val();
+            const foods = Object.values(foodsData).map(food => ({
+                id: food.id,
+                ...food
+            }));
             return { success: true, foods };
         } else {
             return { success: true, foods: [] };
@@ -285,10 +283,21 @@ export const placeOrder = async (orderData) => {
         const ordersRef = ref(database, 'tfc/orders');
         const newOrderRef = push(ordersRef);
         
+        // Ensure items have proper format with all required fields
+        const formattedItems = orderData.items.map(item => ({
+            id: item.id,
+            name: item.name,
+            price: Number(item.price) || 0,
+            qty: Number(item.qty) || 1,
+            image: item.image || ""
+        }));
+        
         const orderToSave = {
             ...orderData,
+            items: formattedItems,
             orderId: newOrderRef.key,
             status: 'pending',
+            total: Number(orderData.total) || 0,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
@@ -312,7 +321,7 @@ export const updateOrderStatus = async (orderId, status) => {
     try {
         const orderRef = ref(database, `tfc/orders/${orderId}`);
         const updates = {
-            status: status,
+            status: status.toLowerCase(),
             updatedAt: new Date().toISOString()
         };
         
@@ -501,11 +510,11 @@ export const getDatabaseStats = async () => {
             totalRevenue: 0
         };
         
-        // Calculate total revenue (include preparing, out-for-delivery, and delivered orders)
+        // Calculate total revenue (only delivered orders)
         if (ordersResult.exists()) {
             Object.values(ordersResult.val()).forEach(order => {
-                if (order.status === 'delivered' || order.status === 'preparing' || order.status === 'out-for-delivery') {
-                    stats.totalRevenue += order.total || 0;
+                if (order.status?.toLowerCase() === 'delivered') {
+                    stats.totalRevenue += Number(order.total) || 0;
                 }
             });
         }
@@ -568,7 +577,7 @@ export const getDeliveredRevenue = async () => {
         
         const orders = snapshot.val();
         return Object.values(orders)
-            .filter(o => o.status === "delivered")
+            .filter(o => o.status?.toLowerCase() === "delivered")
             .reduce((sum, o) => sum + Number(o.total || 0), 0);
     } catch (error) {
         console.error('Error getting delivered revenue:', error);
@@ -605,11 +614,12 @@ export const listenToUserOrders = (email, callback) => {
 export const updateOrderStatusWithTimestamp = async (orderId, status, statusMessage = '') => {
     try {
         const orderRef = ref(database, `tfc/orders/${orderId}`);
+        const lowerStatus = status.toLowerCase();
         const updates = {
-            status: status,
+            status: lowerStatus,
             statusMessage: statusMessage,
             updatedAt: new Date().toISOString(),
-            [`statusHistory/${status}`]: new Date().toISOString()
+            [`statusHistory/${lowerStatus}`]: new Date().toISOString()
         };
         
         await update(orderRef, updates);
