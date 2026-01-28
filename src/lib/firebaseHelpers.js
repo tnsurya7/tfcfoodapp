@@ -619,6 +619,44 @@ export const getDeliveredRevenue = async () => {
     }
 };
 
+// Get admin statistics directly from Firebase
+export async function getAdminStats() {
+    try {
+        const foodsSnap = await get(ref(database, "tfc/foods"));
+        const ordersSnap = await get(ref(database, "tfc/orders"));
+        const usersSnap = await get(ref(database, "tfc/users"));
+
+        const foods = foodsSnap.exists() ? Object.keys(foodsSnap.val()).length : 0;
+        const orders = ordersSnap.exists() ? Object.keys(ordersSnap.val()).length : 0;
+        const users = usersSnap.exists() ? Object.keys(usersSnap.val()).length : 0;
+
+        let revenue = 0;
+
+        if (ordersSnap.exists()) {
+            Object.values(ordersSnap.val()).forEach((order) => {
+                if (order.status?.toLowerCase() === "delivered") {
+                    revenue += Number(order.total || 0);
+                }
+            });
+        }
+
+        console.log('📊 Firebase Admin Stats:', { foods, orders, users, revenue });
+
+        return {
+            success: true,
+            stats: {
+                foods,
+                orders,
+                users,
+                revenue
+            }
+        };
+    } catch (e) {
+        console.error('❌ Error getting admin stats:', e);
+        return { success: false, error: e.message };
+    }
+}
+
 // Listen to specific user's orders (real-time)
 export const listenToUserOrders = (email, callback) => {
     const ordersRef = ref(database, 'tfc/orders');

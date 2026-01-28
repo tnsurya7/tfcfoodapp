@@ -30,7 +30,8 @@ import {
     listenToFoods,
     listenToOrders,
     getDatabaseStats,
-    getDeliveredRevenue
+    getDeliveredRevenue,
+    getAdminStats
 } from '@/lib/firebaseHelpers';
 import { useFirebaseFoodStore } from '@/store/firebaseFoodStore';
 import { seedTFCFoods } from '@/lib/seedFoods';
@@ -53,28 +54,27 @@ export default function AdminDashboard() {
         totalRevenue: 0
     });
 
-    // Function to refresh statistics
+    // Function to refresh statistics (Firebase-only)
     const refreshStats = async () => {
         try {
-            const statsResult = await getDatabaseStats();
-            const revenue = await getDeliveredRevenue();
+            console.log('🔄 Refreshing stats from Firebase...');
+            const res = await getAdminStats();
             
-            if (statsResult.success) {
-                const dbStats = statsResult.stats || { totalUsers: 0, totalFoods: 0, totalOrders: 0, totalRevenue: 0 };
-                
-                // Calculate unique customers from current orders
-                const uniqueCustomers = new Set(orders.map(order => order.email)).size;
-                
+            if (res.success && res.stats) {
                 setStats({
-                    totalCustomers: uniqueCustomers,
-                    totalProducts: dbStats.totalFoods,
-                    totalOrders: dbStats.totalOrders,
-                    totalRevenue: revenue
+                    totalCustomers: res.stats.users,
+                    totalProducts: res.stats.foods,
+                    totalOrders: res.stats.orders,
+                    totalRevenue: res.stats.revenue
                 });
+                console.log('✅ Stats refreshed:', res.stats);
                 toast.success('Statistics refreshed successfully');
+            } else {
+                console.error('❌ Failed to refresh stats:', res.error);
+                toast.error('Failed to refresh statistics');
             }
         } catch (error) {
-            console.error('Error refreshing stats:', error);
+            console.error('❌ Error refreshing stats:', error);
             toast.error('Failed to refresh statistics');
         }
     };
