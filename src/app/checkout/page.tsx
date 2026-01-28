@@ -16,7 +16,7 @@ import { generateUserId } from '@/lib/firebaseHelpers';
 
 function CheckoutContent() {
     const router = useRouter();
-    const { items, getTotalPrice, clearCart, fetchCart, setUserId } = useFirebaseCartStore();
+    const { items, getTotalPrice, clearCart, clearCartInstant, fetchCart, setUserId } = useFirebaseCartStore();
     const { createOrder } = useFirebaseOrderStore();
     const { currentUser: emailUser } = useEmailAuth();
     const [isProcessing, setIsProcessing] = useState(false);
@@ -107,20 +107,25 @@ function CheckoutContent() {
                 paymentMethod: formData.paymentMethod,
             };
 
-            // Place order in Firebase
-            const result = await createOrder(orderData);
+            // OPTIMISTIC UI UPDATE: Show success immediately
+            setOrderPlaced(true);
+            toast.success('Order placed successfully!');
             
-            if (result.success) {
-                // Clear user cart
-                await clearCart();
-                
-                setOrderPlaced(true);
-                toast.success('Order placed successfully!');
-            } else {
+            // Place order with optimistic cart clearing (happens in background)
+            const result = await createOrder(orderData, () => {
+                // Clear cart instantly for immediate UI response
+                clearCartInstant();
+            });
+            
+            if (!result.success) {
+                // If order fails, revert the optimistic update
+                setOrderPlaced(false);
                 toast.error('Failed to place order. Please try again.');
             }
         } catch (error) {
             console.error('Error placing order:', error);
+            // Revert optimistic update on error
+            setOrderPlaced(false);
             toast.error('Failed to place order. Please try again.');
         } finally {
             setIsProcessing(false);

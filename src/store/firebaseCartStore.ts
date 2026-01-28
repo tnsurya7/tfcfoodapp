@@ -23,8 +23,11 @@ interface FirebaseCartStore {
     fetchCart: () => Promise<void>;
     addItem: (foodItem: any) => Promise<boolean>;
     updateQuantity: (foodId: string, qty: number) => Promise<boolean>;
+    increaseQuantity: (foodId: string) => Promise<boolean>;
+    decreaseQuantity: (foodId: string) => Promise<boolean>;
     removeItem: (foodId: string) => Promise<boolean>;
     clearCart: () => Promise<boolean>;
+    clearCartInstant: () => void; // For optimistic UI updates
     
     // Getters
     getTotalItems: () => number;
@@ -148,6 +151,73 @@ export const useFirebaseCartStore = create<FirebaseCartStore>((set, get) => ({
         }
     },
     
+    // Increase quantity with optimistic update
+    increaseQuantity: async (foodId) => {
+        const { userId, items } = get();
+        if (!userId) return false;
+        
+        // Optimistic update: increase quantity immediately in local state
+        const updatedItems = items.map(item => 
+            item.id === foodId ? { ...item, qty: item.qty + 1 } : item
+        );
+        set({ items: updatedItems });
+        
+        try {
+            const currentItem = items.find(item => item.id === foodId);
+            if (currentItem) {
+                const result = await updateCartItemQty(userId, foodId, currentItem.qty + 1);
+                if (!result.success) {
+                    // Revert optimistic update on failure
+                    set({ items });
+                    toast.error('Failed to update quantity');
+                    return false;
+                }
+            }
+            return true;
+        } catch (error) {
+            // Revert optimistic update on error
+            set({ items });
+            toast.error('Failed to update quantity');
+            return false;
+        }
+    },
+    
+    // Decrease quantity with optimistic update
+    decreaseQuantity: async (foodId) => {
+        const { userId, items } = get();
+        if (!userId) return false;
+        
+        const currentItem = items.find(item => item.id === foodId);
+        if (!currentItem) return false;
+        
+        if (currentItem.qty <= 1) {
+            // Remove item if quantity would be 0
+            return await get().removeItem(foodId);
+        }
+        
+        // Optimistic update: decrease quantity immediately in local state
+        const updatedItems = items.map(item => 
+            item.id === foodId ? { ...item, qty: item.qty - 1 } : item
+        );
+        set({ items: updatedItems });
+        
+        try {
+            const result = await updateCartItemQty(userId, foodId, currentItem.qty - 1);
+            if (!result.success) {
+                // Revert optimistic update on failure
+                set({ items });
+                toast.error('Failed to update quantity');
+                return false;
+            }
+            return true;
+        } catch (error) {
+            // Revert optimistic update on error
+            set({ items });
+            toast.error('Failed to update quantity');
+            return false;
+        }
+    },
+    
     // Remove item from cart
     removeItem: async (foodId) => {
         const { userId } = get();
@@ -193,6 +263,11 @@ export const useFirebaseCartStore = create<FirebaseCartStore>((set, get) => ({
             toast.error('Failed to clear cart');
             return false;
         }
+    },
+    
+    // Clear cart instantly for optimistic UI updates
+    clearCartInstant: () => {
+        set({ items: [], error: null });
     },
     
     // Get total items count

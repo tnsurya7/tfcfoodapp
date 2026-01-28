@@ -31,7 +31,7 @@ interface FirebaseOrderStore {
     error: string | null;
     
     // Actions
-    createOrder: (orderData: any) => Promise<{ success: boolean; orderId?: string }>;
+    createOrder: (orderData: any, clearCartLocal?: () => void) => Promise<{ success: boolean; orderId?: string }>;
     updateStatus: (orderId: string, status: string) => Promise<boolean>;
     deleteExistingOrder: (orderId: string) => Promise<boolean>;
     fetchAllOrders: () => Promise<void>;
@@ -61,8 +61,8 @@ export const useFirebaseOrderStore = create<FirebaseOrderStore>((set, get) => ({
     loading: false,
     error: null,
     
-    // Create new order
-    createOrder: async (orderData) => {
+    // Create new order with optimistic UI updates
+    createOrder: async (orderData, clearCartLocal) => {
         set({ loading: true, error: null });
         try {
             const userId = generateUserId(orderData.email);
@@ -78,11 +78,12 @@ export const useFirebaseOrderStore = create<FirebaseOrderStore>((set, get) => ({
                 total: orderData.total
             };
             
-            const result = await placeOrder(orderToPlace);
+            // Use optimistic placeOrder with instant cart clearing
+            const result = await placeOrder(orderToPlace, clearCartLocal);
             
             if (result.success) {
                 set({ loading: false });
-                toast.success('Order placed successfully!');
+                // Don't show toast here - let the checkout page handle it for better UX
                 return { success: true, orderId: result.orderId };
             } else {
                 set({ error: 'Failed to place order', loading: false });

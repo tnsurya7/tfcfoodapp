@@ -12,7 +12,7 @@ import ClientOnly from '@/components/ClientOnly';
 import { generateUserId } from '@/lib/firebaseHelpers';
 
 function CartContent() {
-    const { items, updateQuantity, removeItem, getTotalPrice, clearCart, fetchCart, setUserId } = useFirebaseCartStore();
+    const { items, updateQuantity, increaseQuantity, decreaseQuantity, removeItem, getTotalPrice, clearCart, fetchCart, setUserId, startListening, stopListening } = useFirebaseCartStore();
     const { currentUser: emailUser } = useEmailAuth();
     const [isLoading, setIsLoading] = useState(true);
 
@@ -23,13 +23,30 @@ function CartContent() {
                 setIsLoading(true);
                 setUserId(emailUser.email);
                 await fetchCart();
+                
+                // Start real-time listener for instant updates
+                const unsubscribe = startListening();
                 setIsLoading(false);
+                
+                // Cleanup listener on unmount
+                return unsubscribe;
             } else {
                 setIsLoading(false);
             }
         };
-        loadCart();
-    }, [emailUser, fetchCart, setUserId]);
+        
+        const cleanup = loadCart();
+        
+        // Cleanup function
+        return () => {
+            if (cleanup && typeof cleanup.then === 'function') {
+                cleanup.then(unsubscribe => {
+                    if (unsubscribe) unsubscribe();
+                });
+            }
+            stopListening();
+        };
+    }, [emailUser, fetchCart, setUserId, startListening, stopListening]);
 
     const handleRemoveItem = async (id: string, name: string) => {
         const result = await removeItem(id);
@@ -193,7 +210,7 @@ function CartContent() {
                                             <span className="text-sm text-gray-600">Quantity:</span>
                                             <div className="flex items-center space-x-3">
                                                 <button
-                                                    onClick={() => handleUpdateQuantity(item.id, item.qty - 1)}
+                                                    onClick={() => decreaseQuantity(item.id)}
                                                     className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
                                                 >
                                                     <Minus className="w-3 h-3" />
@@ -202,7 +219,7 @@ function CartContent() {
                                                     {item.qty}
                                                 </span>
                                                 <button
-                                                    onClick={() => handleUpdateQuantity(item.id, item.qty + 1)}
+                                                    onClick={() => increaseQuantity(item.id)}
                                                     className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
                                                 >
                                                     <Plus className="w-3 h-3" />
@@ -236,7 +253,7 @@ function CartContent() {
                                         {/* Quantity Controls */}
                                         <div className="flex items-center space-x-3">
                                             <button
-                                                onClick={() => handleUpdateQuantity(item.id, item.qty - 1)}
+                                                onClick={() => decreaseQuantity(item.id)}
                                                 className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
                                             >
                                                 <Minus className="w-4 h-4" />
@@ -245,7 +262,7 @@ function CartContent() {
                                                 {item.qty}
                                             </span>
                                             <button
-                                                onClick={() => handleUpdateQuantity(item.id, item.qty + 1)}
+                                                onClick={() => increaseQuantity(item.id)}
                                                 className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
                                             >
                                                 <Plus className="w-4 h-4" />

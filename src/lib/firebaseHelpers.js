@@ -1,5 +1,10 @@
-import { ref, get, set, push, update, remove, onValue } from "firebase/database";
+import { ref, get, set, push, update, remove, onValue, goOnline } from "firebase/database";
 import { database } from "./firebase";
+
+// Ensure Firebase connection is always alive for optimal performance
+if (database) {
+    goOnline(database);
+}
 
 /* ------------------ FOOD ------------------ */
 
@@ -104,8 +109,40 @@ export const createOrder = async (order) => {
     return { success: true, orderId: newRef.key };
 };
 
-export const placeOrder = async (orderData) => {
-    return await createOrder(orderData);
+export const placeOrder = async (orderData, clearCartLocal) => {
+    // 1. INSTANT UI UPDATE (Optimistic)
+    if (clearCartLocal && typeof clearCartLocal === 'function') {
+        clearCartLocal(); // Clear cart immediately for instant UI response
+    }
+    
+    // 2. FIREBASE ORDER CREATION (Background)
+    if (!database) throw new Error('Database not available');
+    const orderRef = push(ref(database, "tfc/orders"));
+    
+    // Ensure items have proper structure
+    const formattedItems = orderData.items.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: Number(item.price),
+        qty: Number(item.qty || item.quantity || 1),
+        image: item.image || ""
+    }));
+    
+    await set(orderRef, {
+        ...orderData,
+        items: formattedItems,
+        orderId: orderRef.key,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    });
+    
+    // 3. CLEAR FIREBASE CART (Background)
+    if (orderData.userId) {
+        await remove(ref(database, `tfc/carts/${orderData.userId}`));
+    }
+    
+    return { success: true, orderId: orderRef.key };
 };
 
 export const listenOrders = (callback) => {
