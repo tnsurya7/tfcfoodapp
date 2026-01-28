@@ -8,9 +8,11 @@ export interface FoodItem {
     price: number;
     image: string;
     category: string;
-    isVeg: boolean;
-    isPopular?: boolean;
-    isSpecial?: boolean;
+    type: string; // "veg" or "non-veg"
+    popular?: boolean;
+    special?: boolean;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface CartItem extends FoodItem {

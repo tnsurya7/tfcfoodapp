@@ -21,9 +21,9 @@ export default function FoodForm({ food, onClose, onSave }: FoodFormProps) {
         price: 0,
         image: '',
         category: 'chicken',
-        isVeg: false,
-        isPopular: false,
-        isSpecial: false,
+        type: 'non-veg',
+        popular: false,
+        special: false,
     });
 
     useEffect(() => {
@@ -34,9 +34,9 @@ export default function FoodForm({ food, onClose, onSave }: FoodFormProps) {
                 price: food.price,
                 image: food.image,
                 category: food.category,
-                isVeg: food.isVeg,
-                isPopular: food.isPopular || false,
-                isSpecial: food.isSpecial || false,
+                type: food.type,
+                popular: food.popular || false,
+                special: food.special || false,
             });
         }
     }, [food]);
@@ -202,28 +202,29 @@ export default function FoodForm({ food, onClose, onSave }: FoodFormProps) {
                     </div>
 
                     <div className="space-y-3">
-                        <div className="flex items-center space-x-3">
-                            <input
-                                type="checkbox"
-                                id="isVeg"
-                                checked={formData.isVeg}
-                                onChange={(e) => setFormData({ ...formData, isVeg: e.target.checked })}
-                                className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary dark:focus:ring-primary dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                            />
-                            <label htmlFor="isVeg" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Vegetarian
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Food Type
                             </label>
+                            <select
+                                value={formData.type}
+                                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            >
+                                <option value="veg">Vegetarian</option>
+                                <option value="non-veg">Non-Vegetarian</option>
+                            </select>
                         </div>
 
                         <div className="flex items-center space-x-3">
                             <input
                                 type="checkbox"
-                                id="isPopular"
-                                checked={formData.isPopular}
-                                onChange={(e) => setFormData({ ...formData, isPopular: e.target.checked })}
+                                id="popular"
+                                checked={formData.popular}
+                                onChange={(e) => setFormData({ ...formData, popular: e.target.checked })}
                                 className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary dark:focus:ring-primary dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                             />
-                            <label htmlFor="isPopular" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label htmlFor="popular" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Popular Item
                             </label>
                         </div>
@@ -231,12 +232,12 @@ export default function FoodForm({ food, onClose, onSave }: FoodFormProps) {
                         <div className="flex items-center space-x-3">
                             <input
                                 type="checkbox"
-                                id="isSpecial"
-                                checked={formData.isSpecial}
-                                onChange={(e) => setFormData({ ...formData, isSpecial: e.target.checked })}
+                                id="special"
+                                checked={formData.special}
+                                onChange={(e) => setFormData({ ...formData, special: e.target.checked })}
                                 className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary dark:focus:ring-primary dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                             />
-                            <label htmlFor="isSpecial" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label htmlFor="special" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Today's Special
                             </label>
                         </div>

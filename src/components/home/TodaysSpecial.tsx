@@ -98,11 +98,11 @@ export default function TodaysSpecial() {
                                         <Clock className="w-5 h-5" />
                                         <span>20-25 min</span>
                                     </div>
-                                    <div className={`px-3 py-1 rounded-full text-sm font-semibold ${specialItem.isVeg
+                                    <div className={`px-3 py-1 rounded-full text-sm font-semibold ${specialItem.type === 'veg'
                                         ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
                                         : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
                                         }`}>
-                                        {specialItem.isVeg ? '🌱 Veg' : '🍖 Non-Veg'}
+                                        {specialItem.type === 'veg' ? '🌱 Veg' : '🍖 Non-Veg'}
                                     </div>
                                 </div>
 

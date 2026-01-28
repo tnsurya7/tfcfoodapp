@@ -166,12 +166,12 @@ export default function FoodDetailsPage({ params }: { params: Promise<{ id: stri
                                 <span>20-25 min</span>
                             </div>
                             <div
-                                className={`px-4 py-2 rounded-full text-sm font-semibold ${food.isVeg
+                                className={`px-4 py-2 rounded-full text-sm font-semibold ${food.type === 'veg'
                                     ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
                                     : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
                                     }`}
                             >
-                                {food.isVeg ? '🌱 Vegetarian' : '🍖 Non-Vegetarian'}
+                                {food.type === 'veg' ? '🌱 Vegetarian' : '🍖 Non-Vegetarian'}
                             </div>
                         </div>
 

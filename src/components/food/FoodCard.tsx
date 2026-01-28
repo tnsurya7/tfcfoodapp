@@ -69,10 +69,10 @@ export default function FoodCard({ food }: FoodCardProps) {
                     {/* Veg/Non-Veg Indicator */}
                     <div className="absolute top-3 right-3">
                         <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg ${food.isVeg ? 'bg-green-500' : 'bg-red-500'
+                            className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg ${food.type === 'veg' ? 'bg-green-500' : 'bg-red-500'
                                 }`}
                         >
-                            <div className={`w-3 h-3 rounded-full ${food.isVeg ? 'bg-white' : 'bg-white'}`}></div>
+                            <div className={`w-3 h-3 rounded-full ${food.type === 'veg' ? 'bg-white' : 'bg-white'}`}></div>
                         </div>
                     </div>
 
