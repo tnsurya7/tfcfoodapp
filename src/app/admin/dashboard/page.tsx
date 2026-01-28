@@ -311,31 +311,120 @@ export default function AdminDashboard() {
         
         let currentY = 130;
         
-        // Orders Table
+        // Orders Table with Enhanced Details
         if (orders.length > 0) {
             doc.setFontSize(16);
             doc.text('Recent Orders', 20, currentY);
             
-            const orderData = orders.slice(0, 8).map(order => [
-                order.id.substring(0, 12) + '...',
-                order.customer,
-                order.email,
-                order.phone,
-                `Rs. ${order.total}`,
-                order.status,
-                new Date(order.createdAt).toLocaleDateString()
-            ]);
+            const orderData = orders.slice(0, 8).map(order => {
+                // Build items breakdown
+                const itemsBreakdown = order.items?.map((item: any) => 
+                    `${item.name} x${item.qty || item.quantity || 1} = Rs.${((item.price || 0) * (item.qty || item.quantity || 1)).toFixed(0)}`
+                ).join(', ') || 'No items';
+                
+                return [
+                    order.id.substring(0, 12) + '...',
+                    order.customer,
+                    order.phone,
+                    itemsBreakdown,
+                    order.paymentMethod?.toUpperCase() || 'COD',
+                    order.address?.substring(0, 30) + '...' || 'N/A',
+                    `Rs. ${order.total}`,
+                    order.status,
+                    new Date(order.createdAt).toLocaleDateString() + ' ' + new Date(order.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                ];
+            });
             
             autoTable(doc, {
-                head: [['Order ID', 'Customer', 'Email', 'Phone', 'Total', 'Status', 'Date']],
+                head: [['Order ID', 'Customer', 'Phone', 'Items', 'Payment', 'Address', 'Total', 'Status', 'Ordered At']],
                 body: orderData,
                 startY: currentY + 10,
-                styles: { fontSize: 8 },
-                headStyles: { fillColor: [211, 47, 47] }
+                styles: { fontSize: 7 },
+                headStyles: { fillColor: [211, 47, 47] },
+                columnStyles: {
+                    0: { cellWidth: 20 },
+                    1: { cellWidth: 18 },
+                    2: { cellWidth: 18 },
+                    3: { cellWidth: 35 },
+                    4: { cellWidth: 15 },
+                    5: { cellWidth: 25 },
+                    6: { cellWidth: 15 },
+                    7: { cellWidth: 15 },
+                    8: { cellWidth: 25 }
+                }
             });
             
             currentY = (doc as any).lastAutoTable.finalY + 20;
         }
+        
+        // Business Analytics Section
+        doc.setFontSize(16);
+        doc.text('Business Analytics', 20, currentY);
+        
+        // Category-wise Sales Analysis
+        const categoryStats: { [key: string]: number } = {};
+        const itemStats: { [key: string]: number } = {};
+        const statusStats: { [key: string]: number } = { delivered: 0, preparing: 0, 'out-for-delivery': 0, pending: 0, cancelled: 0 };
+        let deliveredRevenue = 0;
+        let pendingRevenue = 0;
+        
+        orders.forEach(order => {
+            // Status summary
+            const status = order.status || 'pending';
+            statusStats[status] = (statusStats[status] || 0) + 1;
+            
+            // Revenue breakdown
+            if (order.status === 'delivered') {
+                deliveredRevenue += order.total || 0;
+            } else {
+                pendingRevenue += order.total || 0;
+            }
+            
+            // Category and item analysis
+            order.items?.forEach((item: any) => {
+                // Find food category from foods array
+                const foodItem = foods.find(f => f.id === item.id);
+                const category = foodItem?.category || 'unknown';
+                
+                categoryStats[category] = (categoryStats[category] || 0) + ((item.price || 0) * (item.qty || item.quantity || 1));
+                itemStats[item.name] = (itemStats[item.name] || 0) + (item.qty || item.quantity || 1);
+            });
+        });
+        
+        // Category Sales
+        doc.setFontSize(12);
+        doc.text('Category Sales:', 20, currentY + 20);
+        let yPos = currentY + 30;
+        Object.entries(categoryStats).slice(0, 6).forEach(([category, revenue]) => {
+            doc.text(`${category.charAt(0).toUpperCase() + category.slice(1)}: Rs. ${(revenue as number).toFixed(0)}`, 25, yPos);
+            yPos += 10;
+        });
+        
+        // Best Selling Items
+        const topItems = Object.entries(itemStats).sort((a, b) => (b[1] as number) - (a[1] as number)).slice(0, 5);
+        doc.text('Top Selling Items:', 120, currentY + 20);
+        yPos = currentY + 30;
+        topItems.forEach(([item, count]) => {
+            doc.text(`${item} - ${count} orders`, 125, yPos);
+            yPos += 10;
+        });
+        
+        // Order Status Summary
+        doc.text('Order Status Summary:', 20, yPos + 10);
+        yPos += 20;
+        Object.entries(statusStats).forEach(([status, count]) => {
+            if ((count as number) > 0) {
+                doc.text(`${status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' ')}: ${count}`, 25, yPos);
+                yPos += 10;
+            }
+        });
+        
+        // Revenue Breakdown
+        doc.text('Revenue Breakdown:', 120, yPos - 40);
+        doc.text(`Delivered Orders: Rs. ${deliveredRevenue.toFixed(0)}`, 125, yPos - 30);
+        doc.text(`Pending Orders Value: Rs. ${pendingRevenue.toFixed(0)}`, 125, yPos - 20);
+        
+        currentY = yPos + 20;
         
         // Customer Analysis Section
         if (users.length > 0) {
@@ -397,37 +486,53 @@ export default function AdminDashboard() {
             doc.setFontSize(16);
             doc.text('Customer List', 20, currentY);
             
-            const customerData = customerAnalytics.slice(0, 10).map(customer => [
-                customer.customerId.substring(0, 15) + '...',
-                customer.name,
-                customer.email,
-                customer.phone,
-                customer.totalOrders.toString(),
-                `Rs. ${customer.totalSpent}`,
-                customer.lastOrderDate ? new Date(customer.lastOrderDate).toLocaleDateString() : 'Never',
-                customer.lastOrderStatus,
-                new Date(customer.accountCreated).toLocaleDateString()
-            ]);
+            const customerData = customerAnalytics.slice(0, 10).map(customer => {
+                const deliveredOrders = orders.filter(order => 
+                    order.email === customer.email && order.status === 'delivered'
+                ).length;
+                const avgOrderValue = customer.totalOrders > 0 ? (customer.totalSpent / customer.totalOrders) : 0;
+                
+                return [
+                    customer.name,
+                    customer.email,
+                    customer.phone,
+                    customer.totalOrders.toString(),
+                    deliveredOrders.toString(),
+                    `Rs. ${customer.totalSpent}`,
+                    `Rs. ${avgOrderValue.toFixed(0)}`,
+                    customer.lastOrderDate ? new Date(customer.lastOrderDate).toLocaleDateString() : 'Never',
+                    customer.lastOrderStatus
+                ];
+            });
             
             autoTable(doc, {
-                head: [['Customer ID', 'Name', 'Email', 'Phone', 'Orders', 'Total Spent', 'Last Activity', 'Last Status', 'Joined']],
+                head: [['Name', 'Email', 'Phone', 'Orders', 'Delivered', 'Total Spent', 'Avg Order', 'Last Order', 'Status']],
                 body: customerData,
                 startY: currentY + 10,
                 styles: { fontSize: 7 },
                 headStyles: { fillColor: [211, 47, 47] },
                 columnStyles: {
-                    0: { cellWidth: 25 },
-                    1: { cellWidth: 20 },
-                    2: { cellWidth: 35 },
-                    3: { cellWidth: 20 },
+                    0: { cellWidth: 20 },
+                    1: { cellWidth: 35 },
+                    2: { cellWidth: 20 },
+                    3: { cellWidth: 15 },
                     4: { cellWidth: 15 },
                     5: { cellWidth: 20 },
-                    6: { cellWidth: 20 },
+                    6: { cellWidth: 18 },
                     7: { cellWidth: 20 },
                     8: { cellWidth: 20 }
                 }
             });
         }
+        
+        // Professional Footer
+        const pageHeight = doc.internal.pageSize.height;
+        doc.setFontSize(10);
+        doc.setTextColor(100, 100, 100);
+        doc.text('Report Generated By: TFC Food Ordering System', 20, pageHeight - 30);
+        doc.text('Developed by: Surya Kumar', 20, pageHeight - 20);
+        doc.text('Contact: +91 6379151006', 20, pageHeight - 10);
+        doc.text(`Generated on: ${new Date().toLocaleString()}`, 120, pageHeight - 20);
         
         // Save the PDF
         doc.save(`TFC-Dashboard-Report-${new Date().toISOString().split('T')[0]}.pdf`);

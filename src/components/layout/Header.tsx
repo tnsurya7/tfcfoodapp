@@ -14,7 +14,7 @@ export default function Header() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const [mounted, setMounted] = useState(false);
-    const { items, fetchCart, setUserId } = useFirebaseCartStore();
+    const { items, fetchCart, setUserId, startListening, stopListening } = useFirebaseCartStore();
     const { currentUser: emailUser, logout: emailLogout } = useEmailAuth();
 
     // Load user cart when user changes
@@ -23,10 +23,25 @@ export default function Header() {
             if (emailUser?.email) {
                 setUserId(emailUser.email);
                 await fetchCart();
+                
+                // Start real-time listener for instant cart updates
+                const unsubscribe = startListening();
+                return unsubscribe;
             }
         };
-        loadCart();
-    }, [emailUser, fetchCart, setUserId]);
+        
+        const cleanup = loadCart();
+        
+        // Cleanup function
+        return () => {
+            if (cleanup && typeof cleanup.then === 'function') {
+                cleanup.then(unsubscribe => {
+                    if (unsubscribe) unsubscribe();
+                });
+            }
+            stopListening();
+        };
+    }, [emailUser, fetchCart, setUserId, startListening, stopListening]);
 
     const totalItems = items.reduce((sum, item) => sum + item.qty, 0);
 
