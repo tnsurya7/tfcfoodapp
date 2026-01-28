@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useEmailAuth } from "@/contexts/EmailAuthContext";
+import ClientOnly from "@/components/ClientOnly";
 
-export default function TestLoginPage() {
+function TestLoginContent() {
     const { currentUser, logout } = useEmailAuth();
     const [userData, setUserData] = useState(null);
 
@@ -80,5 +81,13 @@ export default function TestLoginPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function TestLoginPage() {
+    return (
+        <ClientOnly>
+            <TestLoginContent />
+        </ClientOnly>
     );
 }

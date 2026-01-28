@@ -7,8 +7,10 @@ import { Trash2, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { useEmailAuth } from '@/contexts/EmailAuthContext';
 import toast from "@/lib/toast";
+import { useEffect, useState } from 'react';
+import ClientOnly from '@/components/ClientOnly';
 
-export default function CartPage() {
+function CartContent() {
     const { items, updateQuantity, removeItem, getTotalPrice, clearCart } = useCartStore();
     const { currentUser: emailUser } = useEmailAuth();
 
@@ -48,7 +50,7 @@ export default function CartPage() {
 
     if (items.length === 0) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center py-20">
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center py-20">
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -56,11 +58,11 @@ export default function CartPage() {
                     className="text-center"
                 >
                     <div className="text-8xl mb-6">🛒</div>
-                    <h1 className="text-4xl font-bold mb-4 dark:text-white">Your Cart is Empty</h1>
-                    <p className="text-gray-600 dark:text-gray-400 text-lg mb-8">
+                    <h1 className="text-4xl font-bold mb-4">Your Cart is Empty</h1>
+                    <p className="text-gray-600 text-lg mb-8">
                         Add some delicious food to get started!
                     </p>
-                    <Link href="/menu" className="btn-primary inline-flex items-center space-x-2">
+                    <Link href="/menu" className="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 inline-flex items-center space-x-2">
                         <ShoppingBag className="w-5 h-5" />
                         <span>Browse Menu</span>
                     </Link>
@@ -74,7 +76,7 @@ export default function CartPage() {
     const finalTotal = totalPrice + deliveryFee;
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+        <div className="min-h-screen bg-gray-50 py-8">
             <div className="container mx-auto px-4">
                 {/* Header */}
                 <motion.div
@@ -85,10 +87,10 @@ export default function CartPage() {
                 >
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-4xl md:text-5xl font-bold mb-2 dark:text-white">
+                            <h1 className="text-4xl md:text-5xl font-bold mb-2">
                                 Your Cart
                             </h1>
-                            <p className="text-gray-600 dark:text-gray-400">
+                            <p className="text-gray-600">
                                 {items.length} {items.length === 1 ? 'item' : 'items'} in your cart
                             </p>
                         </div>
@@ -112,7 +114,7 @@ export default function CartPage() {
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: 30 }}
                                     transition={{ duration: 0.3, delay: index * 0.05 }}
-                                    className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-4 hover:shadow-lg transition-shadow"
+                                    className="bg-white rounded-xl shadow-md p-6 mb-4 hover:shadow-lg transition-shadow"
                                 >
                                     <div className="flex items-center space-x-4">
                                         {/* Image */}
@@ -127,13 +129,13 @@ export default function CartPage() {
 
                                         {/* Details */}
                                         <div className="flex-1">
-                                            <h3 className="font-bold text-lg mb-1 dark:text-white">
+                                            <h3 className="font-bold text-lg mb-1">
                                                 {item.name}
                                             </h3>
-                                            <p className="text-gray-600 dark:text-gray-400 text-sm mb-2 line-clamp-1">
+                                            <p className="text-gray-600 text-sm mb-2 line-clamp-1">
                                                 {item.description}
                                             </p>
-                                            <p className="text-primary font-bold text-xl">
+                                            <p className="text-red-500 font-bold text-xl">
                                                 ₹{item.price.toFixed(0)}
                                             </p>
                                         </div>
@@ -142,16 +144,16 @@ export default function CartPage() {
                                         <div className="flex items-center space-x-3">
                                             <button
                                                 onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                                className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center transition-colors"
+                                                className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
                                             >
                                                 <Minus className="w-4 h-4" />
                                             </button>
-                                            <span className="font-bold text-lg w-8 text-center dark:text-white">
+                                            <span className="font-bold text-lg w-8 text-center">
                                                 {item.quantity}
                                             </span>
                                             <button
                                                 onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                                className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center transition-colors"
+                                                className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
                                             >
                                                 <Plus className="w-4 h-4" />
                                             </button>
@@ -160,7 +162,7 @@ export default function CartPage() {
                                         {/* Remove Button */}
                                         <button
                                             onClick={() => handleRemoveItem(item.id, item.name)}
-                                            className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                         >
                                             <Trash2 className="w-5 h-5" />
                                         </button>
@@ -176,18 +178,18 @@ export default function CartPage() {
                             initial={{ opacity: 0, y: 30 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.6, delay: 0.2 }}
-                            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sticky top-24"
+                            className="bg-white rounded-xl shadow-lg p-6 sticky top-24"
                         >
-                            <h2 className="text-2xl font-bold mb-6 dark:text-white">
+                            <h2 className="text-2xl font-bold mb-6">
                                 Order Summary
                             </h2>
 
                             <div className="space-y-4 mb-6">
-                                <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                <div className="flex justify-between text-gray-600">
                                     <span>Subtotal</span>
                                     <span className="font-semibold">₹{totalPrice.toFixed(0)}</span>
                                 </div>
-                                <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                <div className="flex justify-between text-gray-600">
                                     <span>Delivery Fee</span>
                                     <span className="font-semibold">
                                         {deliveryFee === 0 ? (
@@ -197,17 +199,17 @@ export default function CartPage() {
                                         )}
                                     </span>
                                 </div>
-                                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                                    <div className="flex justify-between text-xl font-bold dark:text-white">
+                                <div className="border-t border-gray-200 pt-4">
+                                    <div className="flex justify-between text-xl font-bold">
                                         <span>Total</span>
-                                        <span className="text-primary">₹{finalTotal.toFixed(0)}</span>
+                                        <span className="text-red-500">₹{finalTotal.toFixed(0)}</span>
                                     </div>
                                 </div>
                             </div>
 
                             {deliveryFee > 0 && (
-                                <div className="bg-secondary/10 border border-secondary/30 rounded-lg p-4 mb-6">
-                                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                                    <p className="text-sm text-gray-700">
                                         💡 Add ₹{(500 - totalPrice).toFixed(0)} more to get <strong>FREE delivery</strong>!
                                     </p>
                                 </div>
@@ -215,7 +217,7 @@ export default function CartPage() {
 
                             <Link
                                 href={getCheckoutLink()}
-                                className="btn-primary w-full flex items-center justify-center space-x-2"
+                                className="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 w-full flex items-center justify-center space-x-2 mb-3"
                             >
                                 <span>{emailUser ? 'Proceed to Checkout' : 'Login to Checkout'}</span>
                                 <ArrowRight className="w-5 h-5" />
@@ -223,7 +225,7 @@ export default function CartPage() {
 
                             <Link
                                 href="/menu"
-                                className="btn-outline w-full mt-3 text-center block"
+                                className="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 w-full text-center block"
                             >
                                 Continue Shopping
                             </Link>
@@ -232,5 +234,13 @@ export default function CartPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function CartPage() {
+    return (
+        <ClientOnly>
+            <CartContent />
+        </ClientOnly>
     );
 }

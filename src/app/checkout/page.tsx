@@ -11,14 +11,7 @@ import { useEmailAuth } from '@/contexts/EmailAuthContext';
 import EmailProtectedRoute from '@/components/auth/EmailProtectedRoute';
 import toast from "@/lib/toast";
 import Image from 'next/image';
-
-export default function CheckoutPage() {
-    return (
-        <EmailProtectedRoute>
-            <CheckoutContent />
-        </EmailProtectedRoute>
-    );
-}
+import ClientOnly from '@/components/ClientOnly';
 
 function CheckoutContent() {
     const router = useRouter();
@@ -99,7 +92,7 @@ function CheckoutContent() {
 
     if (orderPlaced) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center py-20">
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center py-20">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -114,20 +107,20 @@ function CheckoutContent() {
                     >
                         <Check className="w-12 h-12 text-white" />
                     </motion.div>
-                    <h1 className="text-4xl font-bold mb-4 dark:text-white">
+                    <h1 className="text-4xl font-bold mb-4">
                         Order Confirmed! 🎉
                     </h1>
-                    <p className="text-gray-600 dark:text-gray-400 text-lg mb-8">
+                    <p className="text-gray-600 text-lg mb-8">
                         Your order has been placed successfully. We'll deliver it to you soon!
                     </p>
                     <div className="space-y-3">
-                        <Link href="/profile" className="btn-primary w-full block text-center">
+                        <Link href="/profile" className="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 w-full block text-center">
                             Track Your Orders
                         </Link>
-                        <Link href="/menu" className="btn-outline w-full block text-center">
+                        <Link href="/menu" className="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 w-full block text-center">
                             Order More Food
                         </Link>
-                        <Link href="/" className="btn-outline w-full block text-center">
+                        <Link href="/" className="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 w-full block text-center">
                             Back to Home
                         </Link>
                     </div>
@@ -137,12 +130,12 @@ function CheckoutContent() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+        <div className="min-h-screen bg-gray-50 py-8">
             <div className="container mx-auto px-4 max-w-4xl">
                 {/* Header */}
                 <Link
                     href="/cart"
-                    className="inline-flex items-center space-x-2 text-gray-600 dark:text-gray-400 hover:text-primary mb-8 transition-colors"
+                    className="inline-flex items-center space-x-2 text-gray-600 hover:text-red-500 mb-8 transition-colors"
                 >
                     <ArrowLeft className="w-5 h-5" />
                     <span>Back to Cart</span>
@@ -153,19 +146,19 @@ function CheckoutContent() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6 }}
                 >
-                    <h1 className="text-4xl md:text-5xl font-bold mb-8 dark:text-white">
+                    <h1 className="text-4xl md:text-5xl font-bold mb-8">
                         Checkout
                     </h1>
 
                     <form onSubmit={handleSubmit} className="space-y-8">
                         {/* Delivery Information */}
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-                            <h2 className="text-2xl font-bold mb-6 dark:text-white">
+                        <div className="bg-white rounded-xl shadow-md p-6">
+                            <h2 className="text-2xl font-bold mb-6">
                                 Delivery Information
                             </h2>
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
                                         Full Name *
                                     </label>
                                     <input
@@ -173,13 +166,13 @@ function CheckoutContent() {
                                         name="name"
                                         value={formData.name}
                                         onChange={handleInputChange}
-                                        className="input-field"
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                                         placeholder="John Doe"
                                         required
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
                                         Phone Number *
                                     </label>
                                     <input
@@ -187,22 +180,22 @@ function CheckoutContent() {
                                         name="phone"
                                         value={formData.phone}
                                         onChange={handleInputChange}
-                                        className="input-field"
-                                        placeholder="+1 234 567 8900"
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                        placeholder="+91 9876543210"
                                         required
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
                                         Delivery Address *
                                     </label>
                                     <textarea
                                         name="address"
                                         value={formData.address}
                                         onChange={handleInputChange}
-                                        className="input-field"
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                                         rows={3}
-                                        placeholder="123 Main St, Apt 4B, City, State, ZIP"
+                                        placeholder="123 Main St, Apt 4B, City, State, PIN"
                                         required
                                     />
                                 </div>
@@ -210,8 +203,8 @@ function CheckoutContent() {
                         </div>
 
                         {/* Payment Method */}
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-                            <h2 className="text-2xl font-bold mb-6 dark:text-white">
+                        <div className="bg-white rounded-xl shadow-md p-6">
+                            <h2 className="text-2xl font-bold mb-6">
                                 Payment Method
                             </h2>
                             <div className="space-y-3">
@@ -219,20 +212,20 @@ function CheckoutContent() {
                                 <div
                                     onClick={() => handlePaymentMethodChange('cod')}
                                     className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${formData.paymentMethod === 'cod'
-                                            ? 'border-primary bg-primary/5'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-primary/50'
+                                            ? 'border-red-500 bg-red-50'
+                                            : 'border-gray-200 hover:border-red-300'
                                         }`}
                                 >
                                     <div className="flex items-center space-x-3">
-                                        <Banknote className="w-6 h-6 text-primary" />
+                                        <Banknote className="w-6 h-6 text-red-500" />
                                         <div className="flex-1">
-                                            <h3 className="font-bold dark:text-white">Cash on Delivery</h3>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                            <h3 className="font-bold">Cash on Delivery</h3>
+                                            <p className="text-sm text-gray-600">
                                                 Pay when you receive your order
                                             </p>
                                         </div>
                                         {formData.paymentMethod === 'cod' && (
-                                            <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                                            <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
                                                 <Check className="w-4 h-4 text-white" />
                                             </div>
                                         )}
@@ -243,20 +236,20 @@ function CheckoutContent() {
                                 <div
                                     onClick={() => handlePaymentMethodChange('upi')}
                                     className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${formData.paymentMethod === 'upi'
-                                            ? 'border-primary bg-primary/5'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-primary/50'
+                                            ? 'border-red-500 bg-red-50'
+                                            : 'border-gray-200 hover:border-red-300'
                                         }`}
                                 >
                                     <div className="flex items-center space-x-3">
-                                        <Smartphone className="w-6 h-6 text-primary" />
+                                        <Smartphone className="w-6 h-6 text-red-500" />
                                         <div className="flex-1">
-                                            <h3 className="font-bold dark:text-white">UPI Payment</h3>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                            <h3 className="font-bold">UPI Payment</h3>
+                                            <p className="text-sm text-gray-600">
                                                 Pay via UPI QR code
                                             </p>
                                         </div>
                                         {formData.paymentMethod === 'upi' && (
-                                            <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                                            <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
                                                 <Check className="w-4 h-4 text-white" />
                                             </div>
                                         )}
@@ -267,20 +260,20 @@ function CheckoutContent() {
                                 <div
                                     onClick={() => handlePaymentMethodChange('razorpay')}
                                     className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${formData.paymentMethod === 'razorpay'
-                                            ? 'border-primary bg-primary/5'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-primary/50'
+                                            ? 'border-red-500 bg-red-50'
+                                            : 'border-gray-200 hover:border-red-300'
                                         }`}
                                 >
                                     <div className="flex items-center space-x-3">
-                                        <CreditCard className="w-6 h-6 text-primary" />
+                                        <CreditCard className="w-6 h-6 text-red-500" />
                                         <div className="flex-1">
-                                            <h3 className="font-bold dark:text-white">Card Payment</h3>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                            <h3 className="font-bold">Card Payment</h3>
+                                            <p className="text-sm text-gray-600">
                                                 Pay securely with Razorpay
                                             </p>
                                         </div>
                                         {formData.paymentMethod === 'razorpay' && (
-                                            <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                                            <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
                                                 <Check className="w-4 h-4 text-white" />
                                             </div>
                                         )}
@@ -290,13 +283,13 @@ function CheckoutContent() {
                         </div>
 
                         {/* Order Summary */}
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-                            <h2 className="text-2xl font-bold mb-6 dark:text-white">
+                        <div className="bg-white rounded-xl shadow-md p-6">
+                            <h2 className="text-2xl font-bold mb-6">
                                 Order Summary
                             </h2>
                             <div className="space-y-3 mb-6">
                                 {items.map((item) => (
-                                    <div key={item.id} className="flex justify-between text-gray-600 dark:text-gray-400">
+                                    <div key={item.id} className="flex justify-between text-gray-600">
                                         <span>
                                             {item.name} x {item.quantity}
                                         </span>
@@ -305,26 +298,26 @@ function CheckoutContent() {
                                         </span>
                                     </div>
                                 ))}
-                                <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mt-3">
-                                    <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                <div className="border-t border-gray-200 pt-3 mt-3">
+                                    <div className="flex justify-between text-gray-600">
                                         <span>Subtotal</span>
                                         <span className="font-semibold">₹{totalPrice.toFixed(0)}</span>
                                     </div>
-                                    <div className="flex justify-between text-gray-600 dark:text-gray-400 mt-2">
+                                    <div className="flex justify-between text-gray-600 mt-2">
                                         <span>Delivery Fee</span>
                                         <span className="font-semibold">
                                             {deliveryFee === 0 ? (
                                                 <span className="text-green-500">FREE</span>
                                             ) : (
-                                                `Rs. ${deliveryFee.toFixed(0)}`
+                                                `₹${deliveryFee.toFixed(0)}`
                                             )}
                                         </span>
                                     </div>
                                 </div>
-                                <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
-                                    <div className="flex justify-between text-xl font-bold dark:text-white">
+                                <div className="border-t border-gray-200 pt-3">
+                                    <div className="flex justify-between text-xl font-bold">
                                         <span>Total</span>
-                                        <span className="text-primary">₹{finalTotal.toFixed(0)}</span>
+                                        <span className="text-red-500">₹{finalTotal.toFixed(0)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -334,7 +327,7 @@ function CheckoutContent() {
                         <button
                             type="submit"
                             disabled={isProcessing}
-                            className="btn-primary w-full text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="bg-red-500 text-white px-6 py-4 rounded-lg hover:bg-red-600 w-full text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isProcessing ? (
                                 <span className="flex items-center justify-center space-x-2">
@@ -357,12 +350,22 @@ function CheckoutContent() {
                                     <span>Processing...</span>
                                 </span>
                             ) : (
-                                `Place Order - Rs. ${finalTotal.toFixed(0)}`
+                                `Place Order - ₹${finalTotal.toFixed(0)}`
                             )}
                         </button>
                     </form>
                 </motion.div>
             </div>
         </div>
+    );
+}
+
+export default function CheckoutPage() {
+    return (
+        <ClientOnly>
+            <EmailProtectedRoute>
+                <CheckoutContent />
+            </EmailProtectedRoute>
+        </ClientOnly>
     );
 }
