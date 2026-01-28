@@ -49,6 +49,65 @@ export default function RootLayout({
                                 padding: 0,
                                 margin: 0,
                             },
+                            success: {
+                                duration: 4000,
+                                style: {
+                                    background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                                    color: '#ffffff',
+                                    padding: '16px 20px',
+                                    borderRadius: '12px',
+                                    boxShadow: '0 20px 25px -5px rgba(16, 185, 129, 0.3), 0 10px 10px -5px rgba(16, 185, 129, 0.2)',
+                                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                                    backdropFilter: 'blur(10px)',
+                                    fontWeight: '500',
+                                    fontSize: '14px',
+                                    maxWidth: '400px',
+                                    animation: 'slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                },
+                                iconTheme: {
+                                    primary: '#ffffff',
+                                    secondary: '#10B981',
+                                },
+                            },
+                            error: {
+                                duration: 5000,
+                                style: {
+                                    background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+                                    color: '#ffffff',
+                                    padding: '16px 20px',
+                                    borderRadius: '12px',
+                                    boxShadow: '0 20px 25px -5px rgba(239, 68, 68, 0.3), 0 10px 10px -5px rgba(239, 68, 68, 0.2)',
+                                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                                    backdropFilter: 'blur(10px)',
+                                    fontWeight: '500',
+                                    fontSize: '14px',
+                                    maxWidth: '400px',
+                                    animation: 'slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                },
+                                iconTheme: {
+                                    primary: '#ffffff',
+                                    secondary: '#EF4444',
+                                },
+                            },
+                            loading: {
+                                style: {
+                                    background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
+                                    color: '#ffffff',
+                                    padding: '16px 20px',
+                                    borderRadius: '12px',
+                                    boxShadow: '0 20px 25px -5px rgba(59, 130, 246, 0.3), 0 10px 10px -5px rgba(59, 130, 246, 0.2)',
+                                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                                    backdropFilter: 'blur(10px)',
+                                    fontWeight: '500',
+                                    fontSize: '14px',
+                                    maxWidth: '400px',
+                                    animation: 'slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                },
+                                iconTheme: {
+                                    primary: '#ffffff',
+                                    secondary: '#3B82F6',
+                                },
+                            },
                         }}
                     />
                 </EmailAuthProvider>
