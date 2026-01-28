@@ -19,7 +19,6 @@ import toast from "@/lib/toast";
 import Image from 'next/image';
 import { FoodItem } from '@/store/cartStore';
 import FoodForm from '@/components/admin/FoodForm';
-import DataMigration from '@/components/admin/DataMigration';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { 
@@ -32,11 +31,13 @@ import {
     listenToOrders,
     getDatabaseStats
 } from '@/lib/firebaseHelpers';
+import { checkAndFixOrderPaths, testOrderPlacement, getDatabaseStructure } from '@/lib/orderPathFix';
+import { seedFoodsIfEmpty } from '@/lib/seedFoods';
 
 export default function AdminDashboard() {
     const router = useRouter();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [activeTab, setActiveTab] = useState<'foods' | 'orders' | 'customers' | 'migration'>('foods');
+    const [activeTab, setActiveTab] = useState<'foods' | 'orders' | 'customers' | 'database'>('foods');
     const [showFoodForm, setShowFoodForm] = useState(false);
     const [editingFood, setEditingFood] = useState<FoodItem | null>(null);
     const [loading, setLoading] = useState(true);
@@ -51,6 +52,26 @@ export default function AdminDashboard() {
         totalRevenue: 0
     });
 
+    // Function to refresh statistics
+    const refreshStats = async () => {
+        try {
+            const statsResult = await getDatabaseStats();
+            if (statsResult.success) {
+                const dbStats = statsResult.stats || { totalUsers: 0, totalFoods: 0, totalOrders: 0, totalRevenue: 0 };
+                setStats({
+                    totalCustomers: dbStats.totalUsers,
+                    totalProducts: dbStats.totalFoods,
+                    totalOrders: dbStats.totalOrders,
+                    totalRevenue: dbStats.totalRevenue
+                });
+                toast.success('Statistics refreshed successfully');
+            }
+        } catch (error) {
+            console.error('Error refreshing stats:', error);
+            toast.error('Failed to refresh statistics');
+        }
+    };
+
     useEffect(() => {
         const loggedIn = sessionStorage.getItem('adminLoggedIn');
         if (loggedIn !== 'true') {
@@ -60,6 +81,10 @@ export default function AdminDashboard() {
             loadData();
         }
     }, [router]);
+
+    useEffect(() => {
+        seedFoodsIfEmpty();
+    }, []);
 
     const loadData = async () => {
         try {
@@ -92,10 +117,26 @@ export default function AdminDashboard() {
             // Set up real-time listeners
             const unsubscribeFoods = listenToFoods((updatedFoods: any[]) => {
                 setFoods(updatedFoods);
+                // Update food count in stats
+                setStats(prevStats => ({
+                    ...prevStats,
+                    totalProducts: updatedFoods.length
+                }));
             });
 
             const unsubscribeOrders = listenToOrders((updatedOrders: any[]) => {
                 setOrders(updatedOrders);
+                // Update order stats
+                const totalOrders = updatedOrders.length;
+                const totalRevenue = updatedOrders
+                    .filter(order => order.status === 'delivered' || order.status === 'preparing' || order.status === 'out-for-delivery')
+                    .reduce((sum, order) => sum + (order.total || 0), 0);
+                
+                setStats(prevStats => ({
+                    ...prevStats,
+                    totalOrders,
+                    totalRevenue
+                }));
             });
 
             // Cleanup listeners on unmount
@@ -331,6 +372,13 @@ export default function AdminDashboard() {
                             </p>
                         </div>
                         <div className="flex items-center space-x-4">
+                            <button
+                                onClick={refreshStats}
+                                className="flex items-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
+                            >
+                                <TrendingUp className="w-4 h-4" />
+                                <span>Refresh Stats</span>
+                            </button>
                             <Link href="/" className="text-gray-600 dark:text-gray-400 hover:text-primary">
                                 View Site
                             </Link>
@@ -411,13 +459,13 @@ export default function AdminDashboard() {
                                 Customers (0)
                             </button>
                             <button
-                                onClick={() => setActiveTab('migration')}
-                                className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'migration'
+                                onClick={() => setActiveTab('database')}
+                                className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'database'
                                     ? 'bg-primary text-white'
                                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
                                     }`}
                             >
-                                Migration
+                                Database
                             </button>
                         </div>
                     </div>
@@ -659,9 +707,140 @@ export default function AdminDashboard() {
                             </div>
                         )}
 
-                        {activeTab === 'migration' && (
+                        {activeTab === 'database' && (
                             <div>
-                                <DataMigration />
+                                <h2 className="text-2xl font-bold mb-6 dark:text-white">Database Maintenance</h2>
+                                
+                                <div className="space-y-6">
+                                    {/* Food Seeding Section */}
+                                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                                        <h3 className="text-xl font-semibold mb-4 dark:text-white">Food Menu Management</h3>
+                                        <p className="text-gray-600 dark:text-gray-400 mb-4">
+                                            Food menu is automatically seeded when Firebase tfc/foods is empty.
+                                        </p>
+                                        
+                                        <div className="flex flex-wrap gap-3">
+                                            <button
+                                                onClick={async () => {
+                                                    try {
+                                                        await seedFoodsIfEmpty();
+                                                        toast.success('Food seeding check completed');
+                                                        await loadData();
+                                                    } catch (error) {
+                                                        toast.error('Failed to seed foods');
+                                                    }
+                                                }}
+                                                className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
+                                            >
+                                                Check & Seed Foods
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Order Path Fix Section */}
+                                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                                        <h3 className="text-xl font-semibold mb-4 dark:text-white">Order Path Verification</h3>
+                                        <p className="text-gray-600 dark:text-gray-400 mb-4">
+                                            Check and fix any orders that might be saved at the wrong database path.
+                                        </p>
+                                        
+                                        <div className="flex flex-wrap gap-3">
+                                            <button
+                                                onClick={async () => {
+                                                    try {
+                                                        const result = await checkAndFixOrderPaths();
+                                                        if (result.success) {
+                                                            toast.success(result.message);
+                                                        } else {
+                                                            toast.error(result.error);
+                                                        }
+                                                    } catch (error) {
+                                                        toast.error('Failed to check order paths');
+                                                    }
+                                                }}
+                                                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                                            >
+                                                Check & Fix Order Paths
+                                            </button>
+                                            
+                                            <button
+                                                onClick={async () => {
+                                                    try {
+                                                        const result = await testOrderPlacement();
+                                                        if (result.success) {
+                                                            toast.success(result.message);
+                                                        } else {
+                                                            toast.error(result.error);
+                                                        }
+                                                    } catch (error) {
+                                                        toast.error('Failed to test order placement');
+                                                    }
+                                                }}
+                                                className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
+                                            >
+                                                Test Order Placement
+                                            </button>
+                                            
+                                            <button
+                                                onClick={async () => {
+                                                    try {
+                                                        const result = await getDatabaseStructure();
+                                                        if (result.success) {
+                                                            console.log('Database Structure:', result.structure);
+                                                            toast.success('Database structure logged to console');
+                                                        } else {
+                                                            toast.error(result.error);
+                                                        }
+                                                    } catch (error) {
+                                                        toast.error('Failed to get database structure');
+                                                    }
+                                                }}
+                                                className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors"
+                                            >
+                                                View Database Structure
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Database Stats Section */}
+                                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                                        <h3 className="text-xl font-semibold mb-4 dark:text-white">Database Statistics</h3>
+                                        <p className="text-gray-600 dark:text-gray-400 mb-4">
+                                            View current database statistics and health information.
+                                        </p>
+                                        
+                                        <button
+                                            onClick={async () => {
+                                                try {
+                                                    const stats = await getDatabaseStats();
+                                                    if (stats.success && stats.stats) {
+                                                        const message = `Foods: ${stats.stats.totalFoods}, Orders: ${stats.stats.totalOrders}, Users: ${stats.stats.totalUsers}`;
+                                                        toast.success(message);
+                                                        console.log('Database Stats:', stats.stats);
+                                                    } else {
+                                                        toast.error('Failed to get database stats');
+                                                    }
+                                                } catch (error) {
+                                                    toast.error('Failed to get database stats');
+                                                }
+                                            }}
+                                            className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors"
+                                        >
+                                            Get Database Stats
+                                        </button>
+                                    </div>
+                                    
+                                    {/* Instructions */}
+                                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                                        <h4 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">Instructions:</h4>
+                                        <ul className="text-yellow-700 dark:text-yellow-300 text-sm space-y-1">
+                                            <li>• <strong>Check & Fix Order Paths:</strong> Scans for orders saved at wrong paths and moves them to tfc/orders</li>
+                                            <li>• <strong>Test Order Placement:</strong> Places a test order to verify current code is working correctly</li>
+                                            <li>• <strong>View Database Structure:</strong> Shows the current database structure in browser console</li>
+                                            <li>• <strong>Get Database Stats:</strong> Shows counts of foods, orders, and users</li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>

@@ -13,7 +13,7 @@ export default function PopularItems() {
         fetchFoods();
     }, [fetchFoods]);
     
-    const popularItems = foods.filter((food) => food.isPopular).slice(0, 6);
+    const popularItems = foods.filter((food) => food.popular).slice(0, 6);
 
     if (foods.length === 0) {
         return (

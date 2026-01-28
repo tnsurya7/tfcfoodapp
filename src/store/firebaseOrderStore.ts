@@ -69,7 +69,7 @@ export const useFirebaseOrderStore = create<FirebaseOrderStore>((set, get) => ({
             
             const orderToPlace = {
                 userId,
-                name: orderData.name,
+                customer: orderData.customer,
                 phone: orderData.phone,
                 email: orderData.email,
                 address: orderData.address,
@@ -79,6 +79,7 @@ export const useFirebaseOrderStore = create<FirebaseOrderStore>((set, get) => ({
             };
             
             const result = await placeOrder(orderToPlace);
+            
             if (result.success) {
                 set({ loading: false });
                 toast.success('Order placed successfully!');

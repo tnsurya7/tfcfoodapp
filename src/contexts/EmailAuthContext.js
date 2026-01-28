@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import { updateUserLastLogin } from '@/lib/firebaseHelpers';
-import { hybridStorage } from '@/lib/hybridStorage';
 
 const EmailAuthContext = createContext();
 
@@ -25,7 +24,7 @@ export const EmailAuthProvider = ({ children }) => {
 
     const checkAuthState = async () => {
         try {
-            // First check localStorage for immediate auth state
+            // Check localStorage for auth state
             const userData = localStorage.getItem('tfc_user_data');
             if (userData) {
                 const user = JSON.parse(userData);
@@ -33,22 +32,6 @@ export const EmailAuthProvider = ({ children }) => {
                 
                 // Update last login in Firebase (don't wait for it)
                 updateUserLastLogin(user.email).catch(console.error);
-                
-                // Try to sync with Firebase in background
-                if (navigator.onLine) {
-                    try {
-                        const result = await hybridStorage.getUserData(user.email);
-                        if (result.success && !result.offline) {
-                            // Update with latest Firebase data if different
-                            if (JSON.stringify(result.user) !== JSON.stringify(user)) {
-                                setCurrentUser(result.user);
-                                console.log('🔄 User data synced from Firebase');
-                            }
-                        }
-                    } catch (error) {
-                        console.warn('Could not sync user data with Firebase:', error);
-                    }
-                }
             }
         } catch (error) {
             console.error('Error checking auth state:', error);
@@ -62,11 +45,15 @@ export const EmailAuthProvider = ({ children }) => {
     const login = async (userData) => {
         setCurrentUser(userData);
         
-        // Save to hybrid storage (Firebase + localStorage)
+        // Save to Firebase and localStorage
         try {
-            const result = await hybridStorage.saveUserData(userData);
+            const { saveUser } = await import('@/lib/firebaseHelpers');
+            const result = await saveUser(userData);
             if (result.success) {
-                console.log('✅ User data saved to hybrid storage');
+                localStorage.setItem('tfc_user_data', JSON.stringify(userData));
+            } else {
+                // Fallback to localStorage only
+                localStorage.setItem('tfc_user_data', JSON.stringify(userData));
             }
         } catch (error) {
             console.error('Error saving user data:', error);

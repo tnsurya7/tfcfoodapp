@@ -15,7 +15,7 @@ export default function TodaysSpecial() {
         fetchFoods();
     }, [fetchFoods]);
     
-    const specialItem = foods.find((food) => food.isSpecial);
+    const specialItem = foods.find((food) => food.special);
 
     if (foods.length === 0) {
         return (

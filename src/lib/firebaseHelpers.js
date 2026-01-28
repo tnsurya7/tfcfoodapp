@@ -277,6 +277,11 @@ export const listenToCart = (userId, callback) => {
 // Place order
 export const placeOrder = async (orderData) => {
     try {
+        // Check if database is available
+        if (!database) {
+            return { success: false, error: 'Database not initialized' };
+        }
+        
         const ordersRef = ref(database, 'tfc/orders');
         const newOrderRef = push(ordersRef);
         
@@ -297,7 +302,7 @@ export const placeOrder = async (orderData) => {
         
         return { success: true, orderId: newOrderRef.key, order: orderToSave };
     } catch (error) {
-        console.error('Error placing order:', error);
+        console.error('❌ Error placing order:', error);
         return { success: false, error: error.message };
     }
 };
@@ -496,10 +501,10 @@ export const getDatabaseStats = async () => {
             totalRevenue: 0
         };
         
-        // Calculate total revenue
+        // Calculate total revenue (include preparing, out-for-delivery, and delivered orders)
         if (ordersResult.exists()) {
             Object.values(ordersResult.val()).forEach(order => {
-                if (order.status === 'delivered') {
+                if (order.status === 'delivered' || order.status === 'preparing' || order.status === 'out-for-delivery') {
                     stats.totalRevenue += order.total || 0;
                 }
             });
