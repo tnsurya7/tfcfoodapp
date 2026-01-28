@@ -58,11 +58,11 @@ function ProfileContent() {
             }
         };
         loadOrders();
-    }, [emailUser, fetchUserOrders]);
+    }, [emailUser]);
 
     // Filter orders for current user (additional client-side filtering)
     const userOrders = orders.filter(order => 
-        order.email === emailUser?.email || order.userId === generateUserId(emailUser?.email || '')
+        order.email === emailUser?.email
     ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     const handleLogout = () => {
@@ -286,7 +286,7 @@ function ProfileContent() {
                                                 <div className="mb-4">
                                                     <h4 className="font-semibold text-gray-700 mb-2">Items:</h4>
                                                     <div className="space-y-2">
-                                                        {order.items.map((item, index) => (
+                                                        {order.items.map((item: any, index: number) => (
                                                             <div key={index} className="flex justify-between items-center text-sm">
                                                                 <span className="text-gray-600">
                                                                     {item.name} x {item.qty}
