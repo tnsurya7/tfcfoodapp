@@ -30,19 +30,19 @@ export const sendOTPEmail = async (email, otp) => {
     }
 };
 
-// OTP storage and validation helpers
+// OTP validation helpers - using sessionStorage for temporary data only
 export const storeOTP = (email, otp) => {
     const otpData = {
         otp,
         timestamp: Date.now(),
         email
     };
-    localStorage.setItem('tfc_otp_data', JSON.stringify(otpData));
+    sessionStorage.setItem('tfc_otp_data', JSON.stringify(otpData));
 };
 
 export const validateOTP = (email, enteredOTP) => {
     try {
-        const storedData = localStorage.getItem('tfc_otp_data');
+        const storedData = sessionStorage.getItem('tfc_otp_data');
         if (!storedData) {
             return { valid: false, error: 'No OTP found. Please request a new one.' };
         }
@@ -58,13 +58,13 @@ export const validateOTP = (email, enteredOTP) => {
         const currentTime = Date.now();
         const otpAge = currentTime - otpData.timestamp;
         if (otpAge > 300000) {
-            localStorage.removeItem('tfc_otp_data');
+            sessionStorage.removeItem('tfc_otp_data');
             return { valid: false, error: 'OTP has expired. Please request a new one.' };
         }
 
         // Check if OTP matches
         if (otpData.otp === enteredOTP) {
-            localStorage.removeItem('tfc_otp_data');
+            sessionStorage.removeItem('tfc_otp_data');
             return { valid: true };
         } else {
             return { valid: false, error: 'Invalid OTP. Please check and try again.' };
@@ -76,7 +76,7 @@ export const validateOTP = (email, enteredOTP) => {
 
 export const canRequestNewOTP = () => {
     try {
-        const lastRequestTime = localStorage.getItem('tfc_last_otp_request');
+        const lastRequestTime = sessionStorage.getItem('tfc_last_otp_request');
         if (!lastRequestTime) return true;
 
         const currentTime = Date.now();
@@ -90,5 +90,5 @@ export const canRequestNewOTP = () => {
 };
 
 export const setOTPRequestTime = () => {
-    localStorage.setItem('tfc_last_otp_request', Date.now().toString());
+    sessionStorage.setItem('tfc_last_otp_request', Date.now().toString());
 };

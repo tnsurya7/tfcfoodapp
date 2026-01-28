@@ -141,7 +141,7 @@ export default function Header() {
                             </div>
                         ) : (
                             <Link
-                                href="/login"
+                                href="/login?force=true"
                                 className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark font-medium transition-colors"
                             >
                                 Login
@@ -211,7 +211,7 @@ export default function Header() {
                                     </div>
                                 ) : (
                                     <Link
-                                        href="/login"
+                                        href="/login?force=true"
                                         onClick={() => setIsMenuOpen(false)}
                                         className="block px-4 py-3 text-primary hover:bg-primary/10 rounded-lg transition-colors font-medium border-t border-gray-200"
                                     >

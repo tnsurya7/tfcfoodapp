@@ -7,7 +7,7 @@ import { Mail, Phone, User, Shield, ArrowRight, Clock, CheckCircle } from "lucid
 import toast from "@/lib/toast";
 import { generateOTP, sendOTPEmail, storeOTP, validateOTP, canRequestNewOTP, setOTPRequestTime } from "@/lib/emailService";
 import { saveUser, generateUserId } from "@/lib/firebaseHelpers";
-import { useCustomerStore } from "@/store/customerStore";
+import { useEmailAuth } from "@/contexts/EmailAuthContext";
 
 function EmailLoginContent() {
     const [step, setStep] = useState(1); // 1: User Details, 2: OTP Verification
@@ -20,10 +20,22 @@ function EmailLoginContent() {
     const [generatedOtp, setGeneratedOtp] = useState(""); // Store generated OTP
     const [loading, setLoading] = useState(false);
     const [otpSent, setOtpSent] = useState(false);
+    const [isExistingUser, setIsExistingUser] = useState(false);
     const [countdown, setCountdown] = useState(0);
+
+    // Check if user exists when form data changes
+    useEffect(() => {
+        const checkUser = async () => {
+            if (formData.email) {
+                const exists = await checkExistingUser();
+                setIsExistingUser(exists);
+            }
+        };
+        checkUser();
+    }, [formData.email]);
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { addCustomer } = useCustomerStore();
+    const { login: emailLogin } = useEmailAuth();
     
     const redirectTo = searchParams.get('redirect') || '/';
 
@@ -31,22 +43,11 @@ function EmailLoginContent() {
     useEffect(() => {
         const forceLogin = searchParams.get('force');
         if (!forceLogin) {
-            const userData = localStorage.getItem('tfc_user_data');
-            if (userData) {
+            const userEmail = sessionStorage.getItem('tfc_user_email');
+            if (userEmail) {
                 // User is already logged in, redirect them
                 if (redirectTo === '/checkout') {
-                    // Check if there are items in cart
-                    const cartData = localStorage.getItem('cart-storage');
-                    if (cartData) {
-                        const cart = JSON.parse(cartData);
-                        if (cart.state && cart.state.items && cart.state.items.length > 0) {
-                            router.push('/checkout');
-                        } else {
-                            router.push('/menu');
-                        }
-                    } else {
-                        router.push('/menu');
-                    }
+                    router.push('/checkout');
                 } else {
                     router.push(redirectTo);
                 }
@@ -87,55 +88,32 @@ function EmailLoginContent() {
         return true;
     };
 
-    const checkExistingUser = () => {
+    const checkExistingUser = async () => {
         try {
-            const existingUsers = JSON.parse(localStorage.getItem('tfc_registered_users') || '[]');
-            const userKey = `${formData.name.toLowerCase()}_${formData.phone}_${formData.email.toLowerCase()}`;
-            return existingUsers.includes(userKey);
+            const result = await getUser(formData.email);
+            return result.success;
         } catch (error) {
             return false;
         }
     };
 
-    const saveRegisteredUser = () => {
-        try {
-            const existingUsers = JSON.parse(localStorage.getItem('tfc_registered_users') || '[]');
-            const userKey = `${formData.name.toLowerCase()}_${formData.phone}_${formData.email.toLowerCase()}`;
-            if (!existingUsers.includes(userKey)) {
-                existingUsers.push(userKey);
-                localStorage.setItem('tfc_registered_users', JSON.stringify(existingUsers));
-            }
-        } catch (error) {
-            console.error('Error saving registered user:', error);
-        }
-    };
+    // Remove saveRegisteredUser function as we're using Firebase only
 
-    const loginDirectly = () => {
+    const loginDirectly = async () => {
         const userData = {
             name: formData.name,
             phone: formData.phone,
             email: formData.email
         };
         
-        localStorage.setItem('tfc_user_data', JSON.stringify(userData));
-        addCustomer(userData);
-        saveUser(userData).catch(console.error);
+        // Use EmailAuthContext login method
+        await emailLogin(userData);
         
         toast.success("Welcome back! Logging you in...");
         
         setTimeout(() => {
             if (redirectTo === '/checkout') {
-                const cartData = localStorage.getItem('cart-storage');
-                if (cartData) {
-                    const cart = JSON.parse(cartData);
-                    if (cart.state && cart.state.items && cart.state.items.length > 0) {
-                        window.location.href = '/checkout';
-                    } else {
-                        window.location.href = '/menu';
-                    }
-                } else {
-                    window.location.href = '/menu';
-                }
+                window.location.href = '/checkout';
             } else {
                 window.location.href = redirectTo;
             }
@@ -145,9 +123,9 @@ function EmailLoginContent() {
     const sendOTP = async () => {
         if (!validateForm()) return;
 
-        // Check if user is already registered
-        if (checkExistingUser()) {
-            loginDirectly();
+        // Check if user is already registered in Firebase
+        if (await checkExistingUser()) {
+            await loginDirectly();
             return;
         }
 
@@ -189,7 +167,7 @@ function EmailLoginContent() {
         }
     };
 
-    const verifyOTP = () => {
+    const verifyOTP = async () => {
         if (!formData.otp.trim()) {
             toast.error("Please enter the OTP");
             return;
@@ -210,22 +188,15 @@ function EmailLoginContent() {
         console.log("Generated OTP:", storedOtp); // Debug log
         
         if (enteredOtp === storedOtp) {
-            // Save user data to localStorage
+            // Save user data using EmailAuthContext
             const userData = {
                 name: formData.name,
                 phone: formData.phone,
                 email: formData.email
             };
-            localStorage.setItem('tfc_user_data', JSON.stringify(userData));
             
-            // Add customer to store
-            addCustomer(userData);
-            
-            // Save as registered user for future auto-login
-            saveRegisteredUser();
-            
-            // Save to Firebase (don't wait for it)
-            saveUser(userData).catch(console.error);
+            // Use EmailAuthContext login method
+            await emailLogin(userData);
             
             toast.success("Login successful! Redirecting...");
             setLoading(false);
@@ -233,18 +204,7 @@ function EmailLoginContent() {
             // Redirect after short delay
             setTimeout(() => {
                 if (redirectTo === '/checkout') {
-                    // Check if there are items in cart before going to checkout
-                    const cartData = localStorage.getItem('cart-storage');
-                    if (cartData) {
-                        const cart = JSON.parse(cartData);
-                        if (cart.state && cart.state.items && cart.state.items.length > 0) {
-                            window.location.href = '/checkout';
-                        } else {
-                            window.location.href = '/menu'; // Go to menu if no items
-                        }
-                    } else {
-                        window.location.href = '/menu'; // Go to menu if no cart data
-                    }
+                    window.location.href = '/checkout';
                 } else {
                     window.location.href = redirectTo;
                 }
@@ -387,13 +347,13 @@ function EmailLoginContent() {
                                 <>
                                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                                     <span>
-                                        {checkExistingUser() ? "Logging in..." : "Sending OTP..."}
+                                        {isExistingUser ? "Logging in..." : "Sending OTP..."}
                                     </span>
                                 </>
                             ) : (
                                 <>
                                     <span>
-                                        {checkExistingUser() ? "Login (No OTP Required)" : "Send OTP"}
+                                        {isExistingUser ? "Login (No OTP Required)" : "Send OTP"}
                                     </span>
                                     <ArrowRight className="w-5 h-5" />
                                 </>
@@ -401,7 +361,7 @@ function EmailLoginContent() {
                         </button>
 
                         {/* Returning user indicator */}
-                        {checkExistingUser() && (
+                        {isExistingUser && (
                             <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                                 <div className="flex items-center space-x-2">
                                     <CheckCircle className="w-4 h-4 text-green-600" />

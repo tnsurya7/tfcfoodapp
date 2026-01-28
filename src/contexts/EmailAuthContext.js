@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect } from 'react';
-import { updateUserLastLogin } from '@/lib/firebaseHelpers';
+import { getUser, saveUser } from '@/lib/firebaseHelpers';
 
 const EmailAuthContext = createContext();
 
@@ -24,40 +24,44 @@ export const EmailAuthProvider = ({ children }) => {
 
     const checkAuthState = async () => {
         try {
-            // Check localStorage for persistent login
-            const userData = localStorage.getItem('tfc_user');
-            if (userData) {
-                const user = JSON.parse(userData);
-                setCurrentUser(user);
+            // Check sessionStorage for current session only
+            const userEmail = sessionStorage.getItem('tfc_user_email');
+            if (userEmail) {
+                // Fetch user data from Firebase
+                const result = await getUser(userEmail);
+                if (result.success) {
+                    setCurrentUser(result.user);
+                } else {
+                    // User not found in Firebase, clear session
+                    sessionStorage.removeItem('tfc_user_email');
+                }
             }
         } catch (error) {
             console.error('Error checking auth state:', error);
-            localStorage.removeItem('tfc_user');
+            sessionStorage.removeItem('tfc_user_email');
         } finally {
             setLoading(false);
         }
     };
 
     const login = async (userData) => {
-        setCurrentUser(userData);
-        
-        // Save to localStorage immediately for persistent login
-        localStorage.setItem('tfc_user', JSON.stringify(userData));
-        
-        // Save to Firebase (don't wait for it)
         try {
-            const { saveUser } = await import('@/lib/firebaseHelpers');
-            await saveUser(userData);
+            // Save user to Firebase
+            const result = await saveUser(userData);
+            if (result.success) {
+                setCurrentUser(result.user);
+                // Store only email in sessionStorage for current session
+                sessionStorage.setItem('tfc_user_email', userData.email);
+            }
         } catch (error) {
-            console.error('Error saving user to Firebase:', error);
+            console.error('Error logging in user:', error);
+            throw error;
         }
     };
 
     const logout = () => {
         setCurrentUser(null);
-        localStorage.removeItem('tfc_user');
-        localStorage.removeItem('tfc_otp_data');
-        localStorage.removeItem('tfc_last_otp_request');
+        sessionStorage.removeItem('tfc_user_email');
     };
 
     const isAuthenticated = () => {
