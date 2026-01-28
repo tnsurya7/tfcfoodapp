@@ -42,7 +42,7 @@ function ProfileContent() {
                 setIsLoading(true);
                 try {
                     const res = await getOrdersByEmail(emailUser.email);
-                    if (res.success) {
+                    if (res.success && res.orders) {
                         setOrders(res.orders);
                     } else {
                         console.error('Failed to load orders:', res.error);
