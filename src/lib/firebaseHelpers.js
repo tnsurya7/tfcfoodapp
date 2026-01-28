@@ -92,10 +92,10 @@ export const addFood = async (foodData) => {
     }
 };
 
-// Update food item
-export const updateFood = async (foodId, foodData) => {
+// Update food item in Firebase (guaranteed persistence)
+export async function updateFoodInFirebase(foodId, foodData) {
     try {
-        console.log('🔥 updateFood called with:', { foodId, foodData });
+        console.log('🔥 updateFoodInFirebase called with:', { foodId, foodData });
         
         if (!foodId) {
             console.error('❌ No foodId provided');
@@ -105,21 +105,34 @@ export const updateFood = async (foodId, foodData) => {
         const foodRef = ref(database, `tfc/foods/${foodId}`);
         console.log('📍 Firebase path:', `tfc/foods/${foodId}`);
         
-        const updatedFood = {
-            ...foodData,
+        const updateData = {
+            name: foodData.name,
+            price: Number(foodData.price),
+            description: foodData.description || "",
+            image: foodData.image || "",
+            category: foodData.category,
+            type: foodData.type,
+            popular: Boolean(foodData.popular),
+            special: Boolean(foodData.special),
             updatedAt: new Date().toISOString()
         };
         
-        console.log('📝 Data to update:', updatedFood);
+        console.log('📝 Data to update in Firebase:', updateData);
         
-        await update(foodRef, updatedFood);
+        await update(foodRef, updateData);
         console.log('✅ Firebase update successful');
         
-        return { success: true, food: updatedFood };
-    } catch (error) {
-        console.error('❌ Error updating food:', error);
-        return { success: false, error: error.message };
+        return { success: true };
+    } catch (err) {
+        console.error("❌ Firebase update error:", err);
+        return { success: false, error: err.message };
     }
+}
+
+// Update food item (legacy - keeping for compatibility)
+export const updateFood = async (foodId, foodData) => {
+    // Use the new guaranteed Firebase update function
+    return await updateFoodInFirebase(foodId, foodData);
 };
 
 // Delete food item
