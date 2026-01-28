@@ -11,13 +11,13 @@ import toast from '@/lib/toast';
 
 const categories = [
     { id: 'all', name: 'All' },
-    { id: 'chicken', name: 'Chicken' },
-    { id: 'egg', name: 'Egg' },
-    { id: 'veg', name: 'Vegetarian' },
-    { id: 'fried-rice', name: 'Fried Rice' },
+    { id: 'fried', name: 'Fried' },
+    { id: 'bbq', name: 'BBQ' },
+    { id: 'rice', name: 'Rice' },
     { id: 'noodles', name: 'Noodles' },
-    { id: 'drinks', name: 'Drinks' },
+    { id: 'chilli', name: 'Chilli' },
     { id: 'desserts', name: 'Desserts' },
+    { id: 'drinks', name: 'Drinks' },
 ];
 
 function MenuContent() {
