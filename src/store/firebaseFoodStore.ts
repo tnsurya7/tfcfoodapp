@@ -1,159 +1,85 @@
-import { create } from 'zustand';
-import { addFood, updateFood, deleteFood, getAllFoods, listenToFoods } from '@/lib/firebaseHelpers';
-import { FoodItem } from './cartStore';
-import toast from '@/lib/toast';
+import { create } from "zustand";
+import { addFood as addFoodToFirebase, updateFoodInFirebase, deleteFood as deleteFoodFromFirebase, listenToFoods } from "@/lib/firebaseHelpers";
 
-interface FirebaseFoodStore {
-    foods: FoodItem[];
-    loading: boolean;
-    error: string | null;
-    
-    // Actions
-    fetchFoods: () => Promise<void>;
-    addNewFood: (food: Omit<FoodItem, 'id'>) => Promise<boolean>;
-    updateExistingFood: (id: string, food: Partial<FoodItem>) => Promise<boolean>;
-    deleteExistingFood: (id: string) => Promise<boolean>;
-    getFoodById: (id: string) => FoodItem | undefined;
-    getFoodsByCategory: (category: string) => FoodItem[];
-    
-    // Real-time listener
-    startListening: () => () => void;
-    stopListening: () => void;
-    
-    // Internal state management
-    setFoods: (foods: FoodItem[]) => void;
-    setLoading: (loading: boolean) => void;
-    setError: (error: string | null) => void;
+interface Food {
+    id: string;
+    name: string;
+    price: number;
+    description: string;
+    image: string;
+    category: string;
+    type: string;
+    popular: boolean;
+    special: boolean;
 }
 
-let unsubscribeListener: (() => void) | null = null;
+interface FoodStore {
+    foods: Food[];
+    listenFoods: () => void;
+    addFood: (food: Omit<Food, "id">) => Promise<void>;
+    updateFood: (id: string, food: Partial<Food>) => Promise<void>;
+    deleteFood: (id: string) => Promise<void>;
+}
 
-export const useFirebaseFoodStore = create<FirebaseFoodStore>((set, get) => ({
+export const useFirebaseFoodStore = create<FoodStore>((set) => ({
     foods: [],
-    loading: false,
-    error: null,
-    
-    // Fetch all foods from Firebase
-    fetchFoods: async () => {
-        set({ loading: true, error: null });
-        try {
-            const result = await getAllFoods();
-            if (result.success) {
-                set({ foods: result.foods, loading: false });
-            } else {
-                set({ error: result.error, loading: false });
-                toast.error('Failed to fetch foods');
-            }
-        } catch (error) {
-            set({ error: 'Failed to fetch foods', loading: false });
-            toast.error('Failed to fetch foods');
-        }
-    },
-    
-    // Add new food to Firebase
-    addNewFood: async (foodData) => {
-        set({ loading: true, error: null });
-        try {
-            const result = await addFood(foodData);
-            if (result.success) {
-                // Food will be updated via real-time listener
-                set({ loading: false });
-                toast.success('Food item added successfully');
-                return true;
-            } else {
-                set({ error: result.error, loading: false });
-                toast.error('Failed to add food item');
-                return false;
-            }
-        } catch (error) {
-            set({ error: 'Failed to add food item', loading: false });
-            toast.error('Failed to add food item');
-            return false;
-        }
-    },
-    
-    // Update existing food in Firebase
-    updateExistingFood: async (id, foodData) => {
-        set({ loading: true, error: null });
-        try {
-            const result = await updateFood(id, foodData);
-            if (result.success) {
-                // Food will be updated via real-time listener
-                set({ loading: false });
-                toast.success('Food item updated successfully');
-                return true;
-            } else {
-                set({ error: result.error, loading: false });
-                toast.error('Failed to update food item');
-                return false;
-            }
-        } catch (error) {
-            set({ error: 'Failed to update food item', loading: false });
-            toast.error('Failed to update food item');
-            return false;
-        }
-    },
-    
-    // Delete food from Firebase
-    deleteExistingFood: async (id) => {
-        set({ loading: true, error: null });
-        try {
-            const result = await deleteFood(id);
-            if (result.success) {
-                // Food will be removed via real-time listener
-                set({ loading: false });
-                toast.success('Food item deleted successfully');
-                return true;
-            } else {
-                set({ error: result.error, loading: false });
-                toast.error('Failed to delete food item');
-                return false;
-            }
-        } catch (error) {
-            set({ error: 'Failed to delete food item', loading: false });
-            toast.error('Failed to delete food item');
-            return false;
-        }
-    },
-    
-    // Get food by ID
-    getFoodById: (id) => {
-        return get().foods.find((food) => food.id === id);
-    },
-    
-    // Get foods by category
-    getFoodsByCategory: (category) => {
-        return get().foods.filter((food) => food.category === category);
-    },
-    
-    // Start real-time listener
-    startListening: () => {
-        if (unsubscribeListener) {
-            unsubscribeListener();
-        }
+
+    listenFoods: () => {
+        console.log('🔥 Starting Firebase foods listener...');
         
-        unsubscribeListener = listenToFoods((foods: any) => {
-            set({ foods, error: null });
+        const unsubscribe = listenToFoods((updatedFoods: any[]) => {
+            console.log('📊 Firebase foods updated:', updatedFoods.length, 'items');
+            set({ foods: updatedFoods });
         });
         
-        return () => {
-            if (unsubscribeListener) {
-                unsubscribeListener();
-                unsubscribeListener = null;
-            }
-        };
+        return unsubscribe;
     },
-    
-    // Stop real-time listener
-    stopListening: () => {
-        if (unsubscribeListener) {
-            unsubscribeListener();
-            unsubscribeListener = null;
+
+    addFood: async (food) => {
+        try {
+            console.log('➕ Adding food to Firebase:', food.name);
+            
+            const result = await addFoodToFirebase(food);
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to add food');
+            }
+
+            console.log('✅ Food added to Firebase successfully');
+        } catch (error) {
+            console.error('❌ Error adding food to Firebase:', error);
+            throw error;
         }
     },
-    
-    // Internal state setters
-    setFoods: (foods) => set({ foods }),
-    setLoading: (loading) => set({ loading }),
-    setError: (error) => set({ error }),
+
+    updateFood: async (id, food) => {
+        try {
+            console.log('📝 Updating food in Firebase:', id);
+            
+            const result = await updateFoodInFirebase(id, food);
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to update food');
+            }
+
+            console.log('✅ Food updated in Firebase successfully');
+        } catch (error) {
+            console.error('❌ Error updating food in Firebase:', error);
+            throw error;
+        }
+    },
+
+    deleteFood: async (id) => {
+        try {
+            console.log('🗑️ Deleting food from Firebase:', id);
+            
+            const result = await deleteFoodFromFirebase(id);
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to delete food');
+            }
+
+            console.log('✅ Food deleted from Firebase successfully');
+        } catch (error) {
+            console.error('❌ Error deleting food from Firebase:', error);
+            throw error;
+        }
+    },
 }));

@@ -19,7 +19,7 @@ import {
 import Link from 'next/link';
 import { useEmailAuth } from '@/contexts/EmailAuthContext';
 import EmailProtectedRoute from '@/components/auth/EmailProtectedRoute';
-import { getOrdersByEmail } from '@/lib/firebaseHelpers';
+import { getOrdersByUserId } from '@/lib/firebaseHelpers';
 import OrderTracker from '@/components/orders/OrderTracker';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import toast from "@/lib/toast";
@@ -41,8 +41,13 @@ function ProfileContent() {
             if (emailUser?.email) {
                 setIsLoading(true);
                 try {
-                    const res = await getOrdersByEmail(emailUser.email);
+                    // Generate userId from email (same format as order creation)
+                    const userId = emailUser.email.replace(/[@.]/g, "_");
+                    console.log('🔍 Loading orders for userId:', userId);
+                    
+                    const res = await getOrdersByUserId(userId);
                     if (res.success && res.orders) {
+                        console.log('📊 Found orders:', res.orders.length);
                         setOrders(res.orders);
                     } else {
                         console.error('Failed to load orders:', res.error);

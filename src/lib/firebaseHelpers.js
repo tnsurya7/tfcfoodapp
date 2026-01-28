@@ -577,20 +577,28 @@ export const getOrderById = async (orderId) => {
     }
 };
 
-// Get orders by email
-export const getOrdersByEmail = async (email) => {
+// Get orders by userId
+export const getOrdersByUserId = async (userId) => {
     try {
-        const snapshot = await get(ref(database, "tfc/orders"));
-        if (!snapshot.exists()) return { success: true, orders: [] };
+        const ordersRef = ref(database, "tfc/orders");
+        const snapshot = await get(ordersRef);
+        
+        if (!snapshot.exists()) {
+            return { success: true, orders: [] };
+        }
         
         const data = snapshot.val();
+        
         const orders = Object.keys(data)
-            .map(id => ({ id, ...data[id] }))
-            .filter(order => order.email === email);
+            .map((id) => ({
+                id,
+                ...data[id],
+            }))
+            .filter((order) => order.userId === userId);
         
         return { success: true, orders };
     } catch (error) {
-        console.error('Error getting orders by email:', error);
+        console.error('Error getting orders by userId:', error);
         return { success: false, error: error.message };
     }
 };

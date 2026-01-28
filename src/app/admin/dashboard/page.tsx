@@ -32,6 +32,7 @@ import {
     getDatabaseStats,
     getDeliveredRevenue
 } from '@/lib/firebaseHelpers';
+import { useFirebaseFoodStore } from '@/store/firebaseFoodStore';
 import { seedTFCFoods } from '@/lib/seedFoods';
 
 export default function AdminDashboard() {
@@ -43,7 +44,7 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true);
     
     // Firebase data states
-    const [foods, setFoods] = useState<FoodItem[]>([]);
+    const { foods, listenFoods, addFood: addFoodToFirebase, updateFood: updateFoodInFirebase, deleteFood: deleteFoodFromFirebase } = useFirebaseFoodStore();
     const [orders, setOrders] = useState<any[]>([]);
     const [stats, setStats] = useState({
         totalCustomers: 0,
@@ -96,11 +97,8 @@ export default function AdminDashboard() {
         try {
             setLoading(true);
             
-            // Load foods
-            const foodsResult = await getAllFoods();
-            if (foodsResult.success) {
-                setFoods(foodsResult.foods || []);
-            }
+            // Start Firebase foods listener (replaces manual loading)
+            listenFoods();
 
             // Load orders
             const ordersResult = await getAllOrders();
@@ -122,16 +120,7 @@ export default function AdminDashboard() {
                 });
             }
 
-            // Set up real-time listeners
-            const unsubscribeFoods = listenToFoods((updatedFoods: any[]) => {
-                setFoods(updatedFoods);
-                // Update food count in stats
-                setStats(prevStats => ({
-                    ...prevStats,
-                    totalProducts: updatedFoods.length
-                }));
-            });
-
+            // Set up real-time listeners for orders only (foods handled by store)
             const unsubscribeOrders = listenToOrders((updatedOrders: any[]) => {
                 setOrders(updatedOrders);
                 // Update order stats from Firebase data
@@ -153,7 +142,6 @@ export default function AdminDashboard() {
 
             // Cleanup listeners on unmount
             return () => {
-                if (unsubscribeFoods) unsubscribeFoods();
                 if (unsubscribeOrders) unsubscribeOrders();
             };
 
@@ -179,14 +167,11 @@ export default function AdminDashboard() {
                     label: 'Delete',
                     onClick: async () => {
                         try {
-                            const result = await deleteFirebaseFood(id);
-                            if (result.success) {
-                                toast.success('Food item deleted successfully');
-                                // Foods will update automatically via listener
-                            } else {
-                                toast.error(result.error || 'Failed to delete food item');
-                            }
+                            await deleteFoodFromFirebase(id);
+                            toast.success('Food item deleted successfully');
+                            // UI will update automatically via Firebase listener
                         } catch (error) {
+                            console.error('Error deleting food:', error);
                             toast.error('Failed to delete food item');
                         }
                     },
@@ -769,8 +754,9 @@ export default function AdminDashboard() {
                             setShowFoodForm(false);
                             setEditingFood(null);
                         }}
-                        onSave={() => {
-                            // Refresh will happen automatically due to Zustand reactivity
+                        onSave={async () => {
+                            // Firebase listener will automatically update UI
+                            // No manual state updates needed
                         }}
                     />
                 )}

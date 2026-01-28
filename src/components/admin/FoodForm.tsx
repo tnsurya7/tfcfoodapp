@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { X, Upload } from 'lucide-react';
 import { FoodItem } from '@/store/cartStore';
 import toast from '@/lib/toast';
-import { addFood, updateFoodInFirebase } from '@/lib/firebaseHelpers';
+import { useFirebaseFoodStore } from '@/store/firebaseFoodStore';
 
 interface FoodFormProps {
     food?: FoodItem;
@@ -15,6 +15,7 @@ interface FoodFormProps {
 
 export default function FoodForm({ food, onClose, onSave }: FoodFormProps) {
     const [loading, setLoading] = useState(false);
+    const { addFood, updateFood } = useFirebaseFoodStore();
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -53,30 +54,26 @@ export default function FoodForm({ food, onClose, onSave }: FoodFormProps) {
 
         try {
             if (food) {
-                // Update existing food using guaranteed Firebase function
+                // Update existing food using Firebase store
                 console.log('🔥 Updating food with ID:', food.id);
                 console.log('📝 Form data:', formData);
                 
-                const result = await updateFoodInFirebase(food.id, formData);
-                console.log('📊 Update result:', result);
+                await updateFood(food.id, formData);
+                console.log('✅ Food updated successfully');
                 
-                if (result.success) {
-                    toast.success('Food item updated successfully!');
-                    onSave(); // This will trigger real-time listeners to refresh
-                    onClose();
-                } else {
-                    toast.error(result.error || 'Failed to update food item');
-                }
+                toast.success('Food item updated successfully!');
+                onSave(); // This will trigger any cleanup needed
+                onClose();
             } else {
-                // Add new food
-                const result = await addFood(formData);
-                if (result.success) {
-                    toast.success('Food item added successfully!');
-                    onSave();
-                    onClose();
-                } else {
-                    toast.error(result.error || 'Failed to add food item');
-                }
+                // Add new food using Firebase store
+                console.log('➕ Adding new food:', formData.name);
+                
+                await addFood(formData);
+                console.log('✅ Food added successfully');
+                
+                toast.success('Food item added successfully!');
+                onSave(); // This will trigger any cleanup needed
+                onClose();
             }
         } catch (error) {
             console.error('Error saving food:', error);

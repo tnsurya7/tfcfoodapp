@@ -18,18 +18,21 @@ export default function FoodDetailsPage({ params }: { params: Promise<{ id: stri
     const [quantity, setQuantity] = useState(1);
     const [isLoading, setIsLoading] = useState(true);
     const { addItem, setUserId } = useFirebaseCartStore();
-    const { foods, fetchFoods } = useFirebaseFoodStore();
+    const { foods, listenFoods } = useFirebaseFoodStore();
     const { currentUser: emailUser } = useEmailAuth();
 
     // Load foods when component mounts
     useEffect(() => {
-        const loadData = async () => {
-            setIsLoading(true);
-            await fetchFoods();
+        setIsLoading(true);
+        listenFoods();
+        
+        // Set loading to false after a short delay to allow Firebase to load
+        const timer = setTimeout(() => {
             setIsLoading(false);
-        };
-        loadData();
-    }, [fetchFoods]);
+        }, 1000);
+        
+        return () => clearTimeout(timer);
+    }, [listenFoods]);
 
     const food = foods.find((f) => f.id === resolvedParams.id);
 
