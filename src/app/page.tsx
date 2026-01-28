@@ -18,10 +18,10 @@ export default function HomePage() {
                         </a>
                         <br />
                         <a 
-                            href="/test" 
+                            href="/admin" 
                             className="inline-block bg-transparent border-2 border-white text-white font-bold px-8 py-4 rounded-full hover:bg-white hover:text-red-600 transition-colors"
                         >
-                            Test Page
+                            Admin Panel
                         </a>
                     </div>
                     <div className="mt-12 text-center">
