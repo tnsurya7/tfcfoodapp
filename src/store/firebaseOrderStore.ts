@@ -85,7 +85,7 @@ export const useFirebaseOrderStore = create<FirebaseOrderStore>((set, get) => ({
                 toast.success('Order placed successfully!');
                 return { success: true, orderId: result.orderId };
             } else {
-                set({ error: result.error, loading: false });
+                set({ error: 'Failed to place order', loading: false });
                 toast.error('Failed to place order');
                 return { success: false };
             }
@@ -106,7 +106,7 @@ export const useFirebaseOrderStore = create<FirebaseOrderStore>((set, get) => ({
                 toast.success('Order status updated');
                 return true;
             } else {
-                set({ error: result.error, loading: false });
+                set({ error: 'Failed to update order status', loading: false });
                 toast.error('Failed to update order status');
                 return false;
             }
@@ -127,7 +127,7 @@ export const useFirebaseOrderStore = create<FirebaseOrderStore>((set, get) => ({
                 toast.success('Order deleted successfully');
                 return true;
             } else {
-                set({ error: result.error, loading: false });
+                set({ error: 'Failed to delete order', loading: false });
                 toast.error('Failed to delete order');
                 return false;
             }
@@ -146,7 +146,7 @@ export const useFirebaseOrderStore = create<FirebaseOrderStore>((set, get) => ({
             if (result.success) {
                 set({ orders: result.orders, loading: false });
             } else {
-                set({ error: result.error, loading: false });
+                set({ error: 'Failed to fetch orders', loading: false });
                 toast.error('Failed to fetch orders');
             }
         } catch (error) {
@@ -164,7 +164,7 @@ export const useFirebaseOrderStore = create<FirebaseOrderStore>((set, get) => ({
             if (result.success) {
                 set({ userOrders: result.orders, loading: false });
             } else {
-                set({ error: result.error, loading: false });
+                set({ error: 'Failed to fetch your orders', loading: false });
                 toast.error('Failed to fetch your orders');
             }
         } catch (error) {

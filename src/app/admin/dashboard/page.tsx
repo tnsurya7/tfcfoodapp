@@ -34,7 +34,7 @@ import {
     getAdminStats
 } from '@/lib/firebaseHelpers';
 import { useFirebaseFoodStore } from '@/store/firebaseFoodStore';
-import { seedTFCFoods } from '@/lib/seedFoods';
+import { seedTFCFoodsOnce } from '@/lib/seedFoods';
 
 export default function AdminDashboard() {
     const router = useRouter();
@@ -54,30 +54,29 @@ export default function AdminDashboard() {
         totalRevenue: 0
     });
 
-    // Function to refresh statistics (Firebase-only)
-    const refreshStats = async () => {
-        try {
-            console.log('🔄 Refreshing stats from Firebase...');
-            const res = await getAdminStats();
-            
-            if (res.success && res.stats) {
-                setStats({
-                    totalCustomers: res.stats.users,
-                    totalProducts: res.stats.foods,
-                    totalOrders: res.stats.orders,
-                    totalRevenue: res.stats.revenue
-                });
-                console.log('✅ Stats refreshed:', res.stats);
-                toast.success('Statistics refreshed successfully');
-            } else {
-                console.error('❌ Failed to refresh stats:', res.error);
-                toast.error('Failed to refresh statistics');
+    // Auto-load statistics on component mount and when data changes
+    useEffect(() => {
+        const loadStats = async () => {
+            try {
+                console.log('🔄 Auto-loading stats from Firebase...');
+                const res = await getAdminStats();
+                
+                if (res.success && res.stats) {
+                    setStats({
+                        totalCustomers: res.stats.users,
+                        totalProducts: res.stats.foods,
+                        totalOrders: res.stats.orders,
+                        totalRevenue: res.stats.revenue
+                    });
+                    console.log('✅ Stats auto-loaded:', res.stats);
+                }
+            } catch (error) {
+                console.error('❌ Error auto-loading stats:', error);
             }
-        } catch (error) {
-            console.error('❌ Error refreshing stats:', error);
-            toast.error('Failed to refresh statistics');
-        }
-    };
+        };
+
+        loadStats();
+    }, [foods, orders]); // Re-run when foods or orders change
 
     useEffect(() => {
         const loggedIn = sessionStorage.getItem('adminLoggedIn');
@@ -90,7 +89,7 @@ export default function AdminDashboard() {
     }, [router]);
 
     useEffect(() => {
-        seedTFCFoods();
+        seedTFCFoodsOnce();
     }, []);
 
     const loadData = async () => {
@@ -203,7 +202,7 @@ export default function AdminDashboard() {
                 toast.success('Order status updated');
                 // Orders will update automatically via listener
             } else {
-                toast.error(result.error || 'Failed to update order status');
+                toast.error('Failed to update order status');
             }
         } catch (error) {
             toast.error('Failed to update order status');
@@ -223,7 +222,7 @@ export default function AdminDashboard() {
                                 toast.success('Order deleted successfully');
                                 // Orders will update automatically via listener
                             } else {
-                                toast.error(result.error || 'Failed to delete order');
+                                toast.error('Failed to delete order');
                             }
                         } catch (error) {
                             toast.error('Failed to delete order');
@@ -369,13 +368,6 @@ export default function AdminDashboard() {
                             </p>
                         </div>
                         <div className="flex items-center space-x-4">
-                            <button
-                                onClick={refreshStats}
-                                className="flex items-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
-                            >
-                                <TrendingUp className="w-4 h-4" />
-                                <span>Refresh Stats</span>
-                            </button>
                             <Link href="/" className="text-gray-600 dark:text-gray-400 hover:text-primary">
                                 View Site
                             </Link>

@@ -1,703 +1,411 @@
-import { database } from './firebase';
-import { ref, set, get, push, update, remove, onValue, off } from 'firebase/database';
+import { ref, get, set, push, update, remove, onValue } from "firebase/database";
+import { database } from "./firebase";
 
-// Check if database is available
-const isDatabaseAvailable = () => {
-    if (!database) {
-        console.warn('Firebase database not initialized. Make sure environment variables are set.');
-        return false;
-    }
-    return true;
-};
+/* ------------------ FOOD ------------------ */
 
-// ==================== USER FUNCTIONS ====================
-
-// Save user after email OTP verification
-export const saveUser = async (userData) => {
-    try {
-        if (!isDatabaseAvailable()) {
-            return { success: false, error: 'Database not available' };
-        }
-        
-        const userId = userData.email.replace(/\./g, '_').replace(/@/g, '_at_');
-        const userRef = ref(database, `tfc/users/${userId}`);
-        
-        const userToSave = {
-            name: userData.name,
-            phone: userData.phone,
-            email: userData.email,
-            createdAt: new Date().toISOString(),
-            lastLogin: new Date().toISOString()
-        };
-        
-        await set(userRef, userToSave);
-        return { success: true, userId, user: userToSave };
-    } catch (error) {
-        console.error('Error saving user:', error);
-        return { success: false, error: error.message };
-    }
-};
-
-// Get user by email
-export const getUser = async (email) => {
-    try {
-        const userId = email.replace(/\./g, '_').replace(/@/g, '_at_');
-        const userRef = ref(database, `tfc/users/${userId}`);
-        const snapshot = await get(userRef);
-        
-        if (snapshot.exists()) {
-            return { success: true, user: snapshot.val(), userId };
-        } else {
-            return { success: false, error: 'User not found' };
-        }
-    } catch (error) {
-        console.error('Error getting user:', error);
-        return { success: false, error: error.message };
-    }
-};
-
-// Update user last login
-export const updateUserLastLogin = async (email) => {
-    try {
-        const userId = email.replace(/\./g, '_').replace(/@/g, '_at_');
-        const userRef = ref(database, `tfc/users/${userId}/lastLogin`);
-        await set(userRef, new Date().toISOString());
-        return { success: true };
-    } catch (error) {
-        console.error('Error updating last login:', error);
-        return { success: false, error: error.message };
-    }
-};
-
-// ==================== FOOD FUNCTIONS ====================
-
-// Add new food item
-export const addFood = async (foodData) => {
-    try {
-        const foodsRef = ref(database, 'tfc/foods');
-        const newFoodRef = push(foodsRef);
-        
-        const foodToSave = {
-            ...foodData,
-            id: newFoodRef.key,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
-        
-        await set(newFoodRef, foodToSave);
-        return { success: true, foodId: newFoodRef.key, food: foodToSave };
-    } catch (error) {
-        console.error('Error adding food:', error);
-        return { success: false, error: error.message };
-    }
-};
-
-// Update food item in Firebase (guaranteed persistence)
-export async function updateFoodInFirebase(foodId, foodData) {
-    try {
-        console.log('🔥 updateFoodInFirebase called with:', { foodId, foodData });
-        
-        if (!foodId) {
-            console.error('❌ No foodId provided');
-            return { success: false, error: 'Food ID is required' };
-        }
-        
-        const foodRef = ref(database, `tfc/foods/${foodId}`);
-        console.log('📍 Firebase path:', `tfc/foods/${foodId}`);
-        
-        const updateData = {
-            name: foodData.name,
-            price: Number(foodData.price),
-            description: foodData.description || "",
-            image: foodData.image || "",
-            category: foodData.category,
-            type: foodData.type,
-            popular: Boolean(foodData.popular),
-            special: Boolean(foodData.special),
-            updatedAt: new Date().toISOString()
-        };
-        
-        console.log('📝 Data to update in Firebase:', updateData);
-        
-        await update(foodRef, updateData);
-        console.log('✅ Firebase update successful');
-        
-        return { success: true };
-    } catch (err) {
-        console.error("❌ Firebase update error:", err);
-        return { success: false, error: err.message };
-    }
-}
-
-// Update food item (legacy - keeping for compatibility)
-export const updateFood = async (foodId, foodData) => {
-    // Use the new guaranteed Firebase update function
-    return await updateFoodInFirebase(foodId, foodData);
-};
-
-// Delete food item
-export const deleteFood = async (foodId) => {
-    try {
-        const foodRef = ref(database, `tfc/foods/${foodId}`);
-        await remove(foodRef);
-        return { success: true };
-    } catch (error) {
-        console.error('Error deleting food:', error);
-        return { success: false, error: error.message };
-    }
-};
-
-// Get all foods
 export const getAllFoods = async () => {
-    try {
-        const foodsRef = ref(database, 'tfc/foods');
-        const snapshot = await get(foodsRef);
-        
-        if (snapshot.exists()) {
-            const foodsData = snapshot.val();
-            const foods = Object.values(foodsData).map(food => ({
-                id: food.id,
-                ...food
-            }));
-            return { success: true, foods };
-        } else {
-            return { success: true, foods: [] };
-        }
-    } catch (error) {
-        console.error('Error getting foods:', error);
-        return { success: false, error: error.message };
-    }
+    if (!database) throw new Error('Database not available');
+    const snap = await get(ref(database, "tfc/foods"));
+    if (!snap.exists()) return { success: true, foods: [] };
+    
+    const data = snap.val();
+    const foods = Object.keys(data).map(key => ({
+        id: key,
+        ...data[key]
+    }));
+    return { success: true, foods };
 };
 
-// Listen to foods changes (real-time)
-export const listenToFoods = (callback) => {
-    const foodsRef = ref(database, 'tfc/foods');
-    
-    const unsubscribe = onValue(foodsRef, (snapshot) => {
-        const foods = [];
-        if (snapshot.exists()) {
-            snapshot.forEach((childSnapshot) => {
-                foods.push({
-                    id: childSnapshot.key,
-                    ...childSnapshot.val()
-                });
-            });
-        }
+export const listenFoods = (callback) => {
+    if (!database) return () => {};
+    const foodsRef = ref(database, "tfc/foods");
+    return onValue(foodsRef, (snap) => {
+        if (!snap.exists()) return callback([]);
+        const data = snap.val();
+        const foods = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+        }));
         callback(foods);
     });
+};
+
+export const listenToFoods = (callback) => {
+    return listenFoods(callback);
+};
+
+export const addFood = async (food) => {
+    if (!database) throw new Error('Database not available');
+    const newRef = push(ref(database, "tfc/foods"));
+    await set(newRef, {
+        ...food,
+        id: newRef.key,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    });
+    return { success: true };
+};
+
+export const updateFood = async (id, food) => {
+    if (!database) throw new Error('Database not available');
+    await update(ref(database, `tfc/foods/${id}`), {
+        ...food,
+        updatedAt: new Date().toISOString()
+    });
+    return { success: true };
+};
+
+export const updateFoodInFirebase = async (id, food) => {
+    return await updateFood(id, food);
+};
+
+export const deleteFood = async (id) => {
+    if (!database) throw new Error('Database not available');
+    await remove(ref(database, `tfc/foods/${id}`));
+    return { success: true };
+};
+
+/* ------------------ ORDERS ------------------ */
+
+export const getAllOrders = async () => {
+    if (!database) throw new Error('Database not available');
+    const snap = await get(ref(database, "tfc/orders"));
+    if (!snap.exists()) return { success: true, orders: [] };
     
-    return unsubscribe;
+    const data = snap.val();
+    const orders = Object.keys(data).map(key => ({
+        id: key,
+        ...data[key]
+    }));
+    return { success: true, orders };
 };
 
-// ==================== CART FUNCTIONS ====================
+export const createOrder = async (order) => {
+    if (!database) throw new Error('Database not available');
+    const newRef = push(ref(database, "tfc/orders"));
+    
+    // Ensure items have proper structure
+    const formattedItems = order.items.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: Number(item.price),
+        qty: Number(item.qty || item.quantity || 1),
+        image: item.image || ""
+    }));
+    
+    await set(newRef, {
+        ...order,
+        items: formattedItems,
+        orderId: newRef.key,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    });
+    return { success: true, orderId: newRef.key };
+};
 
-// Add item to cart
+export const placeOrder = async (orderData) => {
+    return await createOrder(orderData);
+};
+
+export const listenOrders = (callback) => {
+    if (!database) return () => {};
+    const ordersRef = ref(database, "tfc/orders");
+    return onValue(ordersRef, (snap) => {
+        if (!snap.exists()) return callback([]);
+        const data = snap.val();
+        const orders = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+        }));
+        callback(orders);
+    });
+};
+
+export const listenToOrders = (callback) => {
+    return listenOrders(callback);
+};
+
+export const updateOrderStatus = async (id, status) => {
+    if (!database) throw new Error('Database not available');
+    await update(ref(database, `tfc/orders/${id}`), {
+        status: status.toLowerCase(),
+        updatedAt: new Date().toISOString()
+    });
+    return { success: true };
+};
+
+export const updateOrderStatusWithTimestamp = async (id, status) => {
+    if (!database) throw new Error('Database not available');
+    await update(ref(database, `tfc/orders/${id}`), {
+        status: status.toLowerCase(),
+        updatedAt: new Date().toISOString()
+    });
+    return { success: true };
+};
+
+export const deleteOrder = async (id) => {
+    if (!database) throw new Error('Database not available');
+    await remove(ref(database, `tfc/orders/${id}`));
+    return { success: true };
+};
+
+/* ------------------ USER ORDERS ------------------ */
+
+export const getOrdersByEmail = async (email) => {
+    if (!database) return [];
+    const snap = await get(ref(database, "tfc/orders"));
+    if (!snap.exists()) return [];
+    
+    const data = snap.val();
+    return Object.keys(data).map(key => ({
+        id: key,
+        ...data[key]
+    })).filter(order => order.email === email);
+};
+
+export const getOrdersByUserId = async (userId) => {
+    if (!database) throw new Error('Database not available');
+    const snap = await get(ref(database, "tfc/orders"));
+    if (!snap.exists()) return { success: true, orders: [] };
+    
+    const data = snap.val();
+    const orders = Object.keys(data).map(key => ({
+        id: key,
+        ...data[key]
+    })).filter(order => {
+        // Match by userId or email
+        const orderUserId = order.email ? order.email.replace(/\./g, '_').replace(/@/g, '_at_') : '';
+        return orderUserId === userId || order.userId === userId;
+    });
+    
+    return { success: true, orders };
+};
+
+export const getUserOrders = async (email) => {
+    const orders = await getOrdersByEmail(email);
+    return { success: true, orders };
+};
+
+/* ------------------ USER MANAGEMENT ------------------ */
+
+export const saveUser = async (userData) => {
+    if (!database) throw new Error('Database not available');
+    const userId = userData.email.replace(/\./g, '_').replace(/@/g, '_at_');
+    const userRef = ref(database, `tfc/users/${userId}`);
+    
+    const userToSave = {
+        name: userData.name,
+        phone: userData.phone,
+        email: userData.email,
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString()
+    };
+    
+    await set(userRef, userToSave);
+    return { success: true, userId, user: userToSave };
+};
+
+export const updateUserLastLogin = async (email) => {
+    if (!database) throw new Error('Database not available');
+    const userId = email.replace(/\./g, '_').replace(/@/g, '_at_');
+    const userRef = ref(database, `tfc/users/${userId}`);
+    
+    await update(userRef, {
+        lastLogin: new Date().toISOString()
+    });
+    
+    return { success: true };
+};
+
+export const getUser = async (email) => {
+    if (!database) throw new Error('Database not available');
+    const userId = email.replace(/\./g, '_').replace(/@/g, '_at_');
+    const userRef = ref(database, `tfc/users/${userId}`);
+    const snapshot = await get(userRef);
+    
+    if (snapshot.exists()) {
+        return { success: true, user: snapshot.val(), userId };
+    } else {
+        return { success: false, error: 'User not found' };
+    }
+};
+
+/* ------------------ CART ------------------ */
+
 export const addToCart = async (userId, foodItem) => {
-    try {
-        const cartItemRef = ref(database, `tfc/carts/${userId}/${foodItem.id}`);
-        
-        const cartItem = {
-            name: foodItem.name,
-            price: foodItem.price,
-            image: foodItem.image,
-            qty: foodItem.qty || 1,
-            addedAt: new Date().toISOString()
-        };
-        
-        await set(cartItemRef, cartItem);
-        return { success: true, cartItem };
-    } catch (error) {
-        console.error('Error adding to cart:', error);
-        return { success: false, error: error.message };
-    }
+    if (!database) throw new Error('Database not available');
+    const cartItemRef = ref(database, `tfc/carts/${userId}/${foodItem.id}`);
+    
+    const cartItem = {
+        name: foodItem.name,
+        price: foodItem.price,
+        image: foodItem.image,
+        qty: foodItem.qty || 1,
+        addedAt: new Date().toISOString()
+    };
+    
+    await set(cartItemRef, cartItem);
+    return { success: true, cartItem };
 };
 
-// Update cart item quantity
 export const updateCartItemQty = async (userId, foodId, qty) => {
-    try {
-        if (qty <= 0) {
-            return await removeFromCart(userId, foodId);
-        }
-        
-        const cartItemRef = ref(database, `tfc/carts/${userId}/${foodId}/qty`);
-        await set(cartItemRef, qty);
-        return { success: true };
-    } catch (error) {
-        console.error('Error updating cart quantity:', error);
-        return { success: false, error: error.message };
+    if (!database) throw new Error('Database not available');
+    if (qty <= 0) {
+        return await removeFromCart(userId, foodId);
     }
+    
+    const cartItemRef = ref(database, `tfc/carts/${userId}/${foodId}/qty`);
+    await set(cartItemRef, qty);
+    return { success: true };
 };
 
-// Remove item from cart
 export const removeFromCart = async (userId, foodId) => {
-    try {
-        const cartItemRef = ref(database, `tfc/carts/${userId}/${foodId}`);
-        await remove(cartItemRef);
-        return { success: true };
-    } catch (error) {
-        console.error('Error removing from cart:', error);
-        return { success: false, error: error.message };
-    }
+    if (!database) throw new Error('Database not available');
+    const cartItemRef = ref(database, `tfc/carts/${userId}/${foodId}`);
+    await remove(cartItemRef);
+    return { success: true };
 };
 
-// Get user cart
-export const getUserCart = async (userId) => {
-    try {
-        const cartRef = ref(database, `tfc/carts/${userId}`);
-        const snapshot = await get(cartRef);
-        
-        if (snapshot.exists()) {
-            const cartItems = [];
-            snapshot.forEach((childSnapshot) => {
-                cartItems.push({
-                    id: childSnapshot.key,
-                    ...childSnapshot.val()
-                });
-            });
-            return { success: true, cartItems };
-        } else {
-            return { success: true, cartItems: [] };
-        }
-    } catch (error) {
-        console.error('Error getting cart:', error);
-        return { success: false, error: error.message };
-    }
-};
-
-// Clear user cart
 export const clearUserCart = async (userId) => {
-    try {
-        const cartRef = ref(database, `tfc/carts/${userId}`);
-        await remove(cartRef);
-        return { success: true };
-    } catch (error) {
-        console.error('Error clearing cart:', error);
-        return { success: false, error: error.message };
-    }
+    if (!database) throw new Error('Database not available');
+    const cartRef = ref(database, `tfc/carts/${userId}`);
+    await remove(cartRef);
+    return { success: true };
 };
 
-// Listen to cart changes (real-time)
 export const listenToCart = (userId, callback) => {
+    if (!database) return () => {};
     const cartRef = ref(database, `tfc/carts/${userId}`);
     
-    const unsubscribe = onValue(cartRef, (snapshot) => {
+    return onValue(cartRef, (snapshot) => {
         const cartItems = [];
         if (snapshot.exists()) {
-            snapshot.forEach((childSnapshot) => {
+            const data = snapshot.val();
+            Object.keys(data).forEach(key => {
                 cartItems.push({
-                    id: childSnapshot.key,
-                    ...childSnapshot.val()
+                    id: key,
+                    ...data[key]
                 });
             });
         }
         callback(cartItems);
     });
+};
+
+export const getUserCart = async (userId) => {
+    if (!database) throw new Error('Database not available');
+    const cartRef = ref(database, `tfc/carts/${userId}`);
+    const snapshot = await get(cartRef);
     
-    return unsubscribe;
-};
-
-// ==================== ORDER FUNCTIONS ====================
-
-// Place order
-export const placeOrder = async (orderData) => {
-    try {
-        // Check if database is available
-        if (!database) {
-            return { success: false, error: 'Database not initialized' };
-        }
-        
-        const ordersRef = ref(database, 'tfc/orders');
-        const newOrderRef = push(ordersRef);
-        
-        // Ensure items have proper format with all required fields
-        const formattedItems = orderData.items.map(item => ({
-            id: item.id,
-            name: item.name,
-            price: Number(item.price) || 0,
-            qty: Number(item.qty) || 1,
-            image: item.image || ""
-        }));
-        
-        const orderToSave = {
-            ...orderData,
-            items: formattedItems,
-            orderId: newOrderRef.key,
-            status: 'pending',
-            total: Number(orderData.total) || 0,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
-        
-        await set(newOrderRef, orderToSave);
-        
-        // Clear user cart after successful order
-        if (orderData.userId) {
-            await clearUserCart(orderData.userId);
-        }
-        
-        return { success: true, orderId: newOrderRef.key, order: orderToSave };
-    } catch (error) {
-        console.error('❌ Error placing order:', error);
-        return { success: false, error: error.message };
-    }
-};
-
-// Update order status
-export const updateOrderStatus = async (orderId, status) => {
-    try {
-        const orderRef = ref(database, `tfc/orders/${orderId}`);
-        const updates = {
-            status: status.toLowerCase(),
-            updatedAt: new Date().toISOString()
-        };
-        
-        await update(orderRef, updates);
-        return { success: true };
-    } catch (error) {
-        console.error('Error updating order status:', error);
-        return { success: false, error: error.message };
-    }
-};
-
-// Get all orders
-export const getAllOrders = async () => {
-    try {
-        const ordersRef = ref(database, 'tfc/orders');
-        const snapshot = await get(ordersRef);
-        
-        if (snapshot.exists()) {
-            const orders = [];
-            snapshot.forEach((childSnapshot) => {
-                orders.push({
-                    id: childSnapshot.key,
-                    ...childSnapshot.val()
-                });
+    const cartItems = [];
+    if (snapshot.exists()) {
+        const data = snapshot.val();
+        Object.keys(data).forEach(key => {
+            cartItems.push({
+                id: key,
+                ...data[key]
             });
-            // Sort by creation date (newest first)
-            orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            return { success: true, orders };
-        } else {
-            return { success: true, orders: [] };
-        }
-    } catch (error) {
-        console.error('Error getting orders:', error);
-        return { success: false, error: error.message };
+        });
     }
-};
-
-// Get user orders
-export const getUserOrders = async (userId) => {
-    try {
-        const ordersRef = ref(database, 'tfc/orders');
-        const snapshot = await get(ordersRef);
-        
-        if (snapshot.exists()) {
-            const userOrders = [];
-            snapshot.forEach((childSnapshot) => {
-                const order = childSnapshot.val();
-                if (order.userId === userId) {
-                    userOrders.push({
-                        id: childSnapshot.key,
-                        ...order
-                    });
-                }
-            });
-            // Sort by creation date (newest first)
-            userOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            return { success: true, orders: userOrders };
-        } else {
-            return { success: true, orders: [] };
-        }
-    } catch (error) {
-        console.error('Error getting user orders:', error);
-        return { success: false, error: error.message };
-    }
-};
-
-// Listen to orders changes (real-time)
-export const listenToOrders = (callback) => {
-    const ordersRef = ref(database, 'tfc/orders');
     
-    const unsubscribe = onValue(ordersRef, (snapshot) => {
-        const orders = [];
-        if (snapshot.exists()) {
-            snapshot.forEach((childSnapshot) => {
-                orders.push({
-                    id: childSnapshot.key,
-                    ...childSnapshot.val()
-                });
-            });
-            // Sort by creation date (newest first)
-            orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        }
-        callback(orders);
-    });
+    return { success: true, cartItems };
+};
+
+/* ------------------ STATS ------------------ */
+
+export const getDatabaseStats = async () => {
+    if (!database) throw new Error('Database not available');
     
-    return unsubscribe;
-};
+    const foods = await get(ref(database, "tfc/foods"));
+    const orders = await get(ref(database, "tfc/orders"));
 
-// Delete order (admin only)
-export const deleteOrder = async (orderId) => {
-    try {
-        const orderRef = ref(database, `tfc/orders/${orderId}`);
-        await remove(orderRef);
-        return { success: true };
-    } catch (error) {
-        console.error('Error deleting order:', error);
-        return { success: false, error: error.message };
-    }
-};
+    let totalRevenue = 0;
+    let uniqueCustomers = 0;
 
-// ==================== ADMIN FUNCTIONS ====================
-
-// Save admin credentials (for initial setup)
-export const saveAdmin = async (username, password) => {
-    try {
-        const adminRef = ref(database, `tfc/admins/${username}`);
-        const adminData = {
-            username: username,
-            password: password, // In production, hash this password
-            createdAt: new Date().toISOString()
-        };
+    if (orders.exists()) {
+        const ordersData = orders.val();
+        const customerEmails = new Set();
         
-        await set(adminRef, adminData);
-        return { success: true };
-    } catch (error) {
-        console.error('Error saving admin:', error);
-        return { success: false, error: error.message };
-    }
-};
-
-// Verify admin credentials
-export const verifyAdmin = async (username, password) => {
-    try {
-        const adminRef = ref(database, `tfc/admins/${username}`);
-        const snapshot = await get(adminRef);
-        
-        if (snapshot.exists()) {
-            const adminData = snapshot.val();
-            if (adminData.password === password) {
-                return { success: true, admin: adminData };
-            } else {
-                return { success: false, error: 'Invalid password' };
+        Object.values(ordersData).forEach(order => {
+            if (order.status?.toLowerCase() === "delivered") {
+                totalRevenue += Number(order.total || 0);
             }
-        } else {
-            return { success: false, error: 'Admin not found' };
-        }
-    } catch (error) {
-        console.error('Error verifying admin:', error);
-        return { success: false, error: error.message };
+            if (order.email) {
+                customerEmails.add(order.email);
+            }
+        });
+        
+        uniqueCustomers = customerEmails.size;
     }
+
+    return {
+        success: true,
+        stats: {
+            totalFoods: foods.exists() ? Object.keys(foods.val()).length : 0,
+            totalOrders: orders.exists() ? Object.keys(orders.val()).length : 0,
+            totalUsers: uniqueCustomers,
+            totalRevenue
+        }
+    };
 };
 
-// ==================== UTILITY FUNCTIONS ====================
+export const getDeliveredRevenue = async () => {
+    if (!database) throw new Error('Database not available');
+    
+    const orders = await get(ref(database, "tfc/orders"));
+    let revenue = 0;
 
-// Generate user ID from email
+    if (orders.exists()) {
+        const ordersData = orders.val();
+        Object.values(ordersData).forEach(order => {
+            if (order.status?.toLowerCase() === "delivered") {
+                revenue += Number(order.total || 0);
+            }
+        });
+    }
+
+    return revenue;
+};
+
+export const getAdminStats = async () => {
+    if (!database) throw new Error('Database not available');
+    
+    const foods = await get(ref(database, "tfc/foods"));
+    const orders = await get(ref(database, "tfc/orders"));
+
+    let revenue = 0;
+    let uniqueCustomers = 0;
+
+    if (orders.exists()) {
+        const ordersData = orders.val();
+        const customerEmails = new Set();
+        
+        Object.values(ordersData).forEach(order => {
+            if (order.status?.toLowerCase() === "delivered") {
+                revenue += Number(order.total || 0);
+            }
+            if (order.email) {
+                customerEmails.add(order.email);
+            }
+        });
+        
+        uniqueCustomers = customerEmails.size;
+    }
+
+    return {
+        success: true,
+        stats: {
+            foods: foods.exists() ? Object.keys(foods.val()).length : 0,
+            orders: orders.exists() ? Object.keys(orders.val()).length : 0,
+            users: uniqueCustomers,
+            revenue
+        }
+    };
+};
+
+/* ------------------ UTILITY ------------------ */
+
 export const generateUserId = (email) => {
     return email.replace(/\./g, '_').replace(/@/g, '_at_');
-};
-
-// Initialize default admin (run once)
-export const initializeDefaultAdmin = async () => {
-    try {
-        if (!isDatabaseAvailable()) {
-            return { success: false, error: 'Database not available' };
-        }
-        
-        const username = process.env.NEXT_PUBLIC_ADMIN_USERNAME;
-        const password = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
-        
-        if (!username || !password) {
-            console.error('Admin credentials not found in environment variables');
-            return { success: false, error: 'Admin credentials not configured' };
-        }
-        
-        const result = await saveAdmin(username, password);
-        return result;
-    } catch (error) {
-        console.error('Error initializing default admin:', error);
-        return { success: false, error: error.message };
-    }
-};
-
-// Get database statistics
-export const getDatabaseStats = async () => {
-    try {
-        const [usersResult, foodsResult, ordersResult] = await Promise.all([
-            get(ref(database, 'tfc/users')),
-            get(ref(database, 'tfc/foods')),
-            get(ref(database, 'tfc/orders'))
-        ]);
-        
-        const stats = {
-            totalUsers: usersResult.exists() ? Object.keys(usersResult.val()).length : 0,
-            totalFoods: foodsResult.exists() ? Object.keys(foodsResult.val()).length : 0,
-            totalOrders: ordersResult.exists() ? Object.keys(ordersResult.val()).length : 0,
-            totalRevenue: 0
-        };
-        
-        // Calculate total revenue (only delivered orders)
-        if (ordersResult.exists()) {
-            Object.values(ordersResult.val()).forEach(order => {
-                if (order.status?.toLowerCase() === 'delivered') {
-                    stats.totalRevenue += Number(order.total) || 0;
-                }
-            });
-        }
-        
-        return { success: true, stats };
-    } catch (error) {
-        console.error('Error getting database stats:', error);
-        return { success: false, error: error.message };
-    }
-};
-
-// ==================== ORDER TRACKING FUNCTIONS ====================
-
-// Get order by ID for tracking
-export const getOrderById = async (orderId) => {
-    try {
-        const orderRef = ref(database, `tfc/orders/${orderId}`);
-        const snapshot = await get(orderRef);
-        
-        if (snapshot.exists()) {
-            return { 
-                success: true, 
-                order: {
-                    id: snapshot.key,
-                    ...snapshot.val()
-                }
-            };
-        } else {
-            return { success: false, error: 'Order not found' };
-        }
-    } catch (error) {
-        console.error('Error getting order:', error);
-        return { success: false, error: error.message };
-    }
-};
-
-// Get orders by userId
-export const getOrdersByUserId = async (userId) => {
-    try {
-        const ordersRef = ref(database, "tfc/orders");
-        const snapshot = await get(ordersRef);
-        
-        if (!snapshot.exists()) {
-            return { success: true, orders: [] };
-        }
-        
-        const data = snapshot.val();
-        
-        const orders = Object.keys(data)
-            .map((id) => ({
-                id,
-                ...data[id],
-            }))
-            .filter((order) => order.userId === userId);
-        
-        return { success: true, orders };
-    } catch (error) {
-        console.error('Error getting orders by userId:', error);
-        return { success: false, error: error.message };
-    }
-};
-
-// Get delivered revenue from Firebase
-export const getDeliveredRevenue = async () => {
-    try {
-        const snapshot = await get(ref(database, "tfc/orders"));
-        if (!snapshot.exists()) return 0;
-        
-        const orders = snapshot.val();
-        return Object.values(orders)
-            .filter(o => o.status?.toLowerCase() === "delivered")
-            .reduce((sum, o) => sum + Number(o.total || 0), 0);
-    } catch (error) {
-        console.error('Error getting delivered revenue:', error);
-        return 0;
-    }
-};
-
-// Get admin statistics directly from Firebase
-export async function getAdminStats() {
-    try {
-        const foodsSnap = await get(ref(database, "tfc/foods"));
-        const ordersSnap = await get(ref(database, "tfc/orders"));
-        const usersSnap = await get(ref(database, "tfc/users"));
-
-        const foods = foodsSnap.exists() ? Object.keys(foodsSnap.val()).length : 0;
-        const orders = ordersSnap.exists() ? Object.keys(ordersSnap.val()).length : 0;
-        const users = usersSnap.exists() ? Object.keys(usersSnap.val()).length : 0;
-
-        let revenue = 0;
-
-        if (ordersSnap.exists()) {
-            Object.values(ordersSnap.val()).forEach((order) => {
-                if (order.status?.toLowerCase() === "delivered") {
-                    revenue += Number(order.total || 0);
-                }
-            });
-        }
-
-        console.log('📊 Firebase Admin Stats:', { foods, orders, users, revenue });
-
-        return {
-            success: true,
-            stats: {
-                foods,
-                orders,
-                users,
-                revenue
-            }
-        };
-    } catch (e) {
-        console.error('❌ Error getting admin stats:', e);
-        return { success: false, error: e.message };
-    }
-}
-
-// Listen to specific user's orders (real-time)
-export const listenToUserOrders = (email, callback) => {
-    const ordersRef = ref(database, 'tfc/orders');
-    
-    const unsubscribe = onValue(ordersRef, (snapshot) => {
-        const userOrders = [];
-        if (snapshot.exists()) {
-            snapshot.forEach((childSnapshot) => {
-                const order = childSnapshot.val();
-                if (order.email === email) {
-                    userOrders.push({
-                        id: childSnapshot.key,
-                        ...order
-                    });
-                }
-            });
-            // Sort by creation date (newest first)
-            userOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        }
-        callback(userOrders);
-    });
-    
-    return unsubscribe;
-};
-
-// Update order status with timestamp
-export const updateOrderStatusWithTimestamp = async (orderId, status, statusMessage = '') => {
-    try {
-        const orderRef = ref(database, `tfc/orders/${orderId}`);
-        const lowerStatus = status.toLowerCase();
-        const updates = {
-            status: lowerStatus,
-            statusMessage: statusMessage,
-            updatedAt: new Date().toISOString(),
-            [`statusHistory/${lowerStatus}`]: new Date().toISOString()
-        };
-        
-        await update(orderRef, updates);
-        return { success: true };
-    } catch (error) {
-        console.error('Error updating order status:', error);
-        return { success: false, error: error.message };
-    }
 };

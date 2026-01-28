@@ -42,7 +42,7 @@ function ProfileContent() {
                 setIsLoading(true);
                 try {
                     // Generate userId from email (same format as order creation)
-                    const userId = emailUser.email.replace(/[@.]/g, "_");
+                    const userId = emailUser.email.replace(/\./g, '_').replace(/@/g, '_at_');
                     console.log('🔍 Loading orders for userId:', userId);
                     
                     const res = await getOrdersByUserId(userId);
@@ -50,7 +50,7 @@ function ProfileContent() {
                         console.log('📊 Found orders:', res.orders.length);
                         setOrders(res.orders);
                     } else {
-                        console.error('Failed to load orders:', res.error);
+                        console.error('Failed to load orders');
                         setOrders([]);
                     }
                 } catch (error) {

@@ -41,7 +41,7 @@ export const useFirebaseFoodStore = create<FoodStore>((set) => ({
             
             const result = await addFoodToFirebase(food);
             if (!result.success) {
-                throw new Error(result.error || 'Failed to add food');
+                throw new Error('Failed to add food');
             }
 
             console.log('✅ Food added to Firebase successfully');
@@ -57,7 +57,7 @@ export const useFirebaseFoodStore = create<FoodStore>((set) => ({
             
             const result = await updateFoodInFirebase(id, food);
             if (!result.success) {
-                throw new Error(result.error || 'Failed to update food');
+                throw new Error('Failed to update food');
             }
 
             console.log('✅ Food updated in Firebase successfully');
@@ -73,7 +73,7 @@ export const useFirebaseFoodStore = create<FoodStore>((set) => ({
             
             const result = await deleteFoodFromFirebase(id);
             if (!result.success) {
-                throw new Error(result.error || 'Failed to delete food');
+                throw new Error('Failed to delete food');
             }
 
             console.log('✅ Food deleted from Firebase successfully');

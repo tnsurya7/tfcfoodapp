@@ -24,19 +24,15 @@ export const EmailAuthProvider = ({ children }) => {
 
     const checkAuthState = async () => {
         try {
-            // Check localStorage for auth state
-            const userData = localStorage.getItem('tfc_user_data');
+            // Check localStorage for persistent login
+            const userData = localStorage.getItem('tfc_user');
             if (userData) {
                 const user = JSON.parse(userData);
                 setCurrentUser(user);
-                
-                // Update last login in Firebase (don't wait for it)
-                updateUserLastLogin(user.email).catch(console.error);
             }
         } catch (error) {
             console.error('Error checking auth state:', error);
-            // Clear invalid data
-            localStorage.removeItem('tfc_user_data');
+            localStorage.removeItem('tfc_user');
         } finally {
             setLoading(false);
         }
@@ -45,37 +41,23 @@ export const EmailAuthProvider = ({ children }) => {
     const login = async (userData) => {
         setCurrentUser(userData);
         
-        // Save to Firebase and localStorage
+        // Save to localStorage immediately for persistent login
+        localStorage.setItem('tfc_user', JSON.stringify(userData));
+        
+        // Save to Firebase (don't wait for it)
         try {
             const { saveUser } = await import('@/lib/firebaseHelpers');
-            const result = await saveUser(userData);
-            if (result.success) {
-                localStorage.setItem('tfc_user_data', JSON.stringify(userData));
-            } else {
-                // Fallback to localStorage only
-                localStorage.setItem('tfc_user_data', JSON.stringify(userData));
-            }
+            await saveUser(userData);
         } catch (error) {
-            console.error('Error saving user data:', error);
-            // Fallback to localStorage only
-            localStorage.setItem('tfc_user_data', JSON.stringify(userData));
+            console.error('Error saving user to Firebase:', error);
         }
     };
 
     const logout = () => {
         setCurrentUser(null);
-        localStorage.removeItem('tfc_user_data');
+        localStorage.removeItem('tfc_user');
         localStorage.removeItem('tfc_otp_data');
         localStorage.removeItem('tfc_last_otp_request');
-        
-        // Clear user-specific caches
-        if (currentUser?.email) {
-            const userId = currentUser.email.replace(/\./g, '_').replace(/@/g, '_at_');
-            localStorage.removeItem(`tfc_cart_${userId}`);
-            localStorage.removeItem(`tfc_orders_${userId}`);
-        }
-        
-        // Note: We keep 'tfc_registered_users' so returning users don't need OTP
     };
 
     const isAuthenticated = () => {

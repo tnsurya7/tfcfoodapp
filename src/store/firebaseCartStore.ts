@@ -65,7 +65,7 @@ export const useFirebaseCartStore = create<FirebaseCartStore>((set, get) => ({
             if (result.success) {
                 set({ items: result.cartItems, loading: false });
             } else {
-                set({ error: result.error, loading: false });
+                set({ error: 'Failed to fetch cart', loading: false });
             }
         } catch (error) {
             set({ error: 'Failed to fetch cart', loading: false });
@@ -94,7 +94,7 @@ export const useFirebaseCartStore = create<FirebaseCartStore>((set, get) => ({
                     toast.success(`${foodItem.name} quantity updated in cart`);
                     return true;
                 } else {
-                    set({ error: result.error, loading: false });
+                    set({ error: 'Failed to update cart', loading: false });
                     toast.error('Failed to update cart');
                     return false;
                 }
@@ -113,7 +113,7 @@ export const useFirebaseCartStore = create<FirebaseCartStore>((set, get) => ({
                     toast.success(`${foodItem.name} added to cart`);
                     return true;
                 } else {
-                    set({ error: result.error, loading: false });
+                    set({ error: 'Failed to add item to cart', loading: false });
                     toast.error('Failed to add item to cart');
                     return false;
                 }
@@ -137,7 +137,7 @@ export const useFirebaseCartStore = create<FirebaseCartStore>((set, get) => ({
                 set({ loading: false });
                 return true;
             } else {
-                set({ error: result.error, loading: false });
+                set({ error: 'Failed to update quantity', loading: false });
                 toast.error('Failed to update quantity');
                 return false;
             }
@@ -160,7 +160,7 @@ export const useFirebaseCartStore = create<FirebaseCartStore>((set, get) => ({
                 set({ loading: false });
                 return true;
             } else {
-                set({ error: result.error, loading: false });
+                set({ error: 'Failed to remove item', loading: false });
                 toast.error('Failed to remove item');
                 return false;
             }
@@ -184,7 +184,7 @@ export const useFirebaseCartStore = create<FirebaseCartStore>((set, get) => ({
                 toast.success('Cart cleared');
                 return true;
             } else {
-                set({ error: result.error, loading: false });
+                set({ error: 'Failed to clear cart', loading: false });
                 toast.error('Failed to clear cart');
                 return false;
             }
