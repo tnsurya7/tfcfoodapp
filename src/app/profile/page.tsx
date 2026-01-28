@@ -28,7 +28,7 @@ import ClientOnly from '@/components/ClientOnly';
 function ProfileContent() {
     const router = useRouter();
     const { currentUser: emailUser, logout } = useEmailAuth();
-    const [orders, setOrders] = useState([]);
+    const [orders, setOrders] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState<'profile' | 'orders'>('orders');
     const [isLoading, setIsLoading] = useState(true);
 
