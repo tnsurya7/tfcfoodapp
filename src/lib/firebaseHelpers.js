@@ -95,16 +95,29 @@ export const addFood = async (foodData) => {
 // Update food item
 export const updateFood = async (foodId, foodData) => {
     try {
+        console.log('🔥 updateFood called with:', { foodId, foodData });
+        
+        if (!foodId) {
+            console.error('❌ No foodId provided');
+            return { success: false, error: 'Food ID is required' };
+        }
+        
         const foodRef = ref(database, `tfc/foods/${foodId}`);
+        console.log('📍 Firebase path:', `tfc/foods/${foodId}`);
+        
         const updatedFood = {
             ...foodData,
             updatedAt: new Date().toISOString()
         };
         
+        console.log('📝 Data to update:', updatedFood);
+        
         await update(foodRef, updatedFood);
+        console.log('✅ Firebase update successful');
+        
         return { success: true, food: updatedFood };
     } catch (error) {
-        console.error('Error updating food:', error);
+        console.error('❌ Error updating food:', error);
         return { success: false, error: error.message };
     }
 };

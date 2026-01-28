@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, Upload } from 'lucide-react';
 import { FoodItem } from '@/store/cartStore';
-import toast from 'react-hot-toast';
+import toast from '@/lib/toast';
 import { addFood, updateFood } from '@/lib/firebaseHelpers';
 
 interface FoodFormProps {
@@ -20,7 +20,7 @@ export default function FoodForm({ food, onClose, onSave }: FoodFormProps) {
         description: '',
         price: 0,
         image: '',
-        category: 'chicken',
+        category: 'fried',
         type: 'non-veg',
         popular: false,
         special: false,
@@ -54,7 +54,10 @@ export default function FoodForm({ food, onClose, onSave }: FoodFormProps) {
         try {
             if (food) {
                 // Update existing food
+                console.log('Updating food with ID:', food.id);
+                console.log('Form data:', formData);
                 const result = await updateFood(food.id, formData);
+                console.log('Update result:', result);
                 if (result.success) {
                     toast.success('Food item updated successfully!');
                     onSave();
@@ -82,13 +85,13 @@ export default function FoodForm({ food, onClose, onSave }: FoodFormProps) {
     };
 
     const categories = [
-        { value: 'chicken', label: 'Chicken' },
-        { value: 'egg', label: 'Egg' },
-        { value: 'veg', label: 'Vegetarian' },
-        { value: 'fried-rice', label: 'Fried Rice' },
+        { value: 'fried', label: 'Fried' },
+        { value: 'bbq', label: 'BBQ' },
+        { value: 'rice', label: 'Rice' },
         { value: 'noodles', label: 'Noodles' },
-        { value: 'drinks', label: 'Drinks' },
+        { value: 'chilli', label: 'Chilli' },
         { value: 'desserts', label: 'Desserts' },
+        { value: 'drinks', label: 'Drinks' },
     ];
 
     return (
