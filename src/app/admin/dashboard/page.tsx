@@ -32,7 +32,7 @@ import {
     getDatabaseStats,
     getDeliveredRevenue
 } from '@/lib/firebaseHelpers';
-import { seedFoodsIfEmpty } from '@/lib/seedFoods';
+import { seedTFCFoods } from '@/lib/seedFoods';
 
 export default function AdminDashboard() {
     const router = useRouter();
@@ -89,7 +89,7 @@ export default function AdminDashboard() {
     }, [router]);
 
     useEffect(() => {
-        seedFoodsIfEmpty();
+        seedTFCFoods();
     }, []);
 
     const loadData = async () => {

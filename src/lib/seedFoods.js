@@ -48,36 +48,32 @@ const defaultFoods = [
     { name:"Mojito Strawberry", price:59, category:"drinks", description:"Strawberry mojito", type:"veg", image:"", popular:false, special:false }
 ];
 
-export async function seedFoodsIfEmpty() {
+export async function seedTFCFoods() {
     try {
         const foodsRef = ref(database, "tfc/foods");
-        const snapshot = await get(foodsRef);
         
-        const existingFoods = snapshot.val() || {};
+        // Clear all existing foods first
+        console.log("Clearing existing foods...");
+        await set(foodsRef, null);
         
-        console.log("Checking missing foods...");
+        console.log("Adding new TFC menu items...");
         let addedCount = 0;
         
         for (const food of defaultFoods) {
-            const alreadyExists = Object.values(existingFoods)
-                .some(f => f.name.toLowerCase() === food.name.toLowerCase());
+            const newFoodRef = push(foodsRef);
             
-            if (!alreadyExists) {
-                const newFoodRef = push(foodsRef);
-                
-                await set(newFoodRef, {
-                    ...food,
-                    id: newFoodRef.key,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                });
-                
-                addedCount++;
-                console.log(`Added: ${food.name}`);
-            }
+            await set(newFoodRef, {
+                ...food,
+                id: newFoodRef.key,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            });
+            
+            addedCount++;
+            console.log(`Added: ${food.name} - ₹${food.price}`);
         }
         
-        console.log(`Added ${addedCount} missing foods`);
+        console.log(`Successfully added ${addedCount} TFC menu items`);
     } catch (error) {
         console.error("Error seeding foods:", error);
     }
