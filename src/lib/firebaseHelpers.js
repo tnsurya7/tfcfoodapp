@@ -542,32 +542,37 @@ export const getOrderById = async (orderId) => {
     }
 };
 
-// Get orders by user email for tracking
+// Get orders by email
 export const getOrdersByEmail = async (email) => {
     try {
-        const ordersRef = ref(database, 'tfc/orders');
-        const snapshot = await get(ordersRef);
+        const snapshot = await get(ref(database, "tfc/orders"));
+        if (!snapshot.exists()) return { success: true, orders: [] };
         
-        if (snapshot.exists()) {
-            const userOrders = [];
-            snapshot.forEach((childSnapshot) => {
-                const order = childSnapshot.val();
-                if (order.email === email) {
-                    userOrders.push({
-                        id: childSnapshot.key,
-                        ...order
-                    });
-                }
-            });
-            // Sort by creation date (newest first)
-            userOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            return { success: true, orders: userOrders };
-        } else {
-            return { success: true, orders: [] };
-        }
+        const data = snapshot.val();
+        const orders = Object.keys(data)
+            .map(id => ({ id, ...data[id] }))
+            .filter(order => order.email === email);
+        
+        return { success: true, orders };
     } catch (error) {
-        console.error('Error getting user orders:', error);
+        console.error('Error getting orders by email:', error);
         return { success: false, error: error.message };
+    }
+};
+
+// Get delivered revenue from Firebase
+export const getDeliveredRevenue = async () => {
+    try {
+        const snapshot = await get(ref(database, "tfc/orders"));
+        if (!snapshot.exists()) return 0;
+        
+        const orders = snapshot.val();
+        return Object.values(orders)
+            .filter(o => o.status === "delivered")
+            .reduce((sum, o) => sum + Number(o.total || 0), 0);
+    } catch (error) {
+        console.error('Error getting delivered revenue:', error);
+        return 0;
     }
 };
 

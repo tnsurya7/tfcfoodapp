@@ -29,15 +29,15 @@ import {
     deleteOrder as deleteFirebaseOrder,
     listenToFoods,
     listenToOrders,
-    getDatabaseStats
+    getDatabaseStats,
+    getDeliveredRevenue
 } from '@/lib/firebaseHelpers';
-import { checkAndFixOrderPaths, testOrderPlacement, getDatabaseStructure } from '@/lib/orderPathFix';
 import { seedFoodsIfEmpty } from '@/lib/seedFoods';
 
 export default function AdminDashboard() {
     const router = useRouter();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [activeTab, setActiveTab] = useState<'foods' | 'orders' | 'customers' | 'database'>('foods');
+    const [activeTab, setActiveTab] = useState<'foods' | 'orders' | 'customers'>('foods');
     const [showFoodForm, setShowFoodForm] = useState(false);
     const [editingFood, setEditingFood] = useState<FoodItem | null>(null);
     const [loading, setLoading] = useState(true);
@@ -56,13 +56,19 @@ export default function AdminDashboard() {
     const refreshStats = async () => {
         try {
             const statsResult = await getDatabaseStats();
+            const revenue = await getDeliveredRevenue();
+            
             if (statsResult.success) {
                 const dbStats = statsResult.stats || { totalUsers: 0, totalFoods: 0, totalOrders: 0, totalRevenue: 0 };
+                
+                // Calculate unique customers from current orders
+                const uniqueCustomers = new Set(orders.map(order => order.email)).size;
+                
                 setStats({
-                    totalCustomers: dbStats.totalUsers,
+                    totalCustomers: uniqueCustomers,
                     totalProducts: dbStats.totalFoods,
                     totalOrders: dbStats.totalOrders,
-                    totalRevenue: dbStats.totalRevenue
+                    totalRevenue: revenue
                 });
                 toast.success('Statistics refreshed successfully');
             }
@@ -102,15 +108,17 @@ export default function AdminDashboard() {
                 setOrders(ordersResult.orders || []);
             }
 
-            // Load statistics
+            // Load statistics using Firebase only
             const statsResult = await getDatabaseStats();
+            const revenue = await getDeliveredRevenue();
+            
             if (statsResult.success) {
                 const dbStats = statsResult.stats || { totalUsers: 0, totalFoods: 0, totalOrders: 0, totalRevenue: 0 };
                 setStats({
                     totalCustomers: dbStats.totalUsers,
                     totalProducts: dbStats.totalFoods,
                     totalOrders: dbStats.totalOrders,
-                    totalRevenue: dbStats.totalRevenue
+                    totalRevenue: revenue
                 });
             }
 
@@ -126,16 +134,20 @@ export default function AdminDashboard() {
 
             const unsubscribeOrders = listenToOrders((updatedOrders: any[]) => {
                 setOrders(updatedOrders);
-                // Update order stats
+                // Update order stats from Firebase data
                 const totalOrders = updatedOrders.length;
                 const totalRevenue = updatedOrders
-                    .filter(order => order.status === 'delivered' || order.status === 'preparing' || order.status === 'out-for-delivery')
+                    .filter(order => order.status === 'delivered')
                     .reduce((sum, order) => sum + (order.total || 0), 0);
+                
+                // Calculate unique customers from orders
+                const uniqueCustomers = new Set(updatedOrders.map(order => order.email)).size;
                 
                 setStats(prevStats => ({
                     ...prevStats,
                     totalOrders,
-                    totalRevenue
+                    totalRevenue,
+                    totalCustomers: uniqueCustomers
                 }));
             });
 
@@ -456,16 +468,10 @@ export default function AdminDashboard() {
                                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
                                     }`}
                             >
-                                Customers (0)
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('database')}
-                                className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'database'
-                                    ? 'bg-primary text-white'
-                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                    }`}
-                            >
-                                Database
+                                Customers ({(() => {
+                                    const customerEmails = new Set(orders.map(order => order.email));
+                                    return customerEmails.size;
+                                })()})
                             </button>
                         </div>
                     </div>
@@ -677,6 +683,9 @@ export default function AdminDashboard() {
                                                     Name
                                                 </th>
                                                 <th className="text-left py-3 px-4 font-semibold dark:text-white">
+                                                    Email
+                                                </th>
+                                                <th className="text-left py-3 px-4 font-semibold dark:text-white">
                                                     Phone
                                                 </th>
                                                 <th className="text-left py-3 px-4 font-semibold dark:text-white">
@@ -686,160 +695,64 @@ export default function AdminDashboard() {
                                                     Total Spent
                                                 </th>
                                                 <th className="text-left py-3 px-4 font-semibold dark:text-white">
-                                                    Joined Date
-                                                </th>
-                                                <th className="text-left py-3 px-4 font-semibold dark:text-white">
-                                                    Last Login
+                                                    Last Order
                                                 </th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {/* Customer data not implemented yet */}
+                                            {(() => {
+                                                // Build customers from orders
+                                                const customerMap = new Map();
+                                                
+                                                orders.forEach(order => {
+                                                    if (!customerMap.has(order.email)) {
+                                                        customerMap.set(order.email, {
+                                                            name: order.customer,
+                                                            email: order.email,
+                                                            phone: order.phone,
+                                                            totalOrders: 0,
+                                                            totalSpent: 0,
+                                                            lastOrderDate: order.createdAt
+                                                        });
+                                                    }
+                                                    
+                                                    const customer = customerMap.get(order.email);
+                                                    customer.totalOrders += 1;
+                                                    customer.totalSpent += order.total;
+                                                    
+                                                    // Update last order date if this order is more recent
+                                                    if (new Date(order.createdAt) > new Date(customer.lastOrderDate)) {
+                                                        customer.lastOrderDate = order.createdAt;
+                                                    }
+                                                });
+                                                
+                                                const customers = Array.from(customerMap.values());
+                                                
+                                                if (customers.length === 0) {
+                                                    return (
+                                                        <tr>
+                                                            <td colSpan={6} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                                                                No customers found
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                }
+                                                
+                                                return customers.map((customer, index) => (
+                                                    <tr key={customer.email} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                                        <td className="py-3 px-4 dark:text-white">{customer.name}</td>
+                                                        <td className="py-3 px-4 dark:text-gray-400">{customer.email}</td>
+                                                        <td className="py-3 px-4 dark:text-gray-400">{customer.phone}</td>
+                                                        <td className="py-3 px-4 dark:text-white font-semibold">{customer.totalOrders}</td>
+                                                        <td className="py-3 px-4 dark:text-white font-semibold">₹{customer.totalSpent}</td>
+                                                        <td className="py-3 px-4 dark:text-gray-400">
+                                                            {new Date(customer.lastOrderDate).toLocaleDateString()}
+                                                        </td>
+                                                    </tr>
+                                                ));
+                                            })()}
                                         </tbody>
                                     </table>
-                                    
-                                    {true && (
-                                        <div className="text-center py-8">
-                                            <p className="text-gray-500 dark:text-gray-400">Customer management coming soon</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'database' && (
-                            <div>
-                                <h2 className="text-2xl font-bold mb-6 dark:text-white">Database Maintenance</h2>
-                                
-                                <div className="space-y-6">
-                                    {/* Food Seeding Section */}
-                                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                                        <h3 className="text-xl font-semibold mb-4 dark:text-white">Food Menu Management</h3>
-                                        <p className="text-gray-600 dark:text-gray-400 mb-4">
-                                            Food menu is automatically seeded when Firebase tfc/foods is empty.
-                                        </p>
-                                        
-                                        <div className="flex flex-wrap gap-3">
-                                            <button
-                                                onClick={async () => {
-                                                    try {
-                                                        await seedFoodsIfEmpty();
-                                                        toast.success('Food seeding check completed');
-                                                        await loadData();
-                                                    } catch (error) {
-                                                        toast.error('Failed to seed foods');
-                                                    }
-                                                }}
-                                                className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
-                                            >
-                                                Check & Seed Foods
-                                            </button>
-                                        </div>
-                                    </div>
-                                    
-                                    {/* Order Path Fix Section */}
-                                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                                        <h3 className="text-xl font-semibold mb-4 dark:text-white">Order Path Verification</h3>
-                                        <p className="text-gray-600 dark:text-gray-400 mb-4">
-                                            Check and fix any orders that might be saved at the wrong database path.
-                                        </p>
-                                        
-                                        <div className="flex flex-wrap gap-3">
-                                            <button
-                                                onClick={async () => {
-                                                    try {
-                                                        const result = await checkAndFixOrderPaths();
-                                                        if (result.success) {
-                                                            toast.success(result.message);
-                                                        } else {
-                                                            toast.error(result.error);
-                                                        }
-                                                    } catch (error) {
-                                                        toast.error('Failed to check order paths');
-                                                    }
-                                                }}
-                                                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
-                                            >
-                                                Check & Fix Order Paths
-                                            </button>
-                                            
-                                            <button
-                                                onClick={async () => {
-                                                    try {
-                                                        const result = await testOrderPlacement();
-                                                        if (result.success) {
-                                                            toast.success(result.message);
-                                                        } else {
-                                                            toast.error(result.error);
-                                                        }
-                                                    } catch (error) {
-                                                        toast.error('Failed to test order placement');
-                                                    }
-                                                }}
-                                                className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
-                                            >
-                                                Test Order Placement
-                                            </button>
-                                            
-                                            <button
-                                                onClick={async () => {
-                                                    try {
-                                                        const result = await getDatabaseStructure();
-                                                        if (result.success) {
-                                                            console.log('Database Structure:', result.structure);
-                                                            toast.success('Database structure logged to console');
-                                                        } else {
-                                                            toast.error(result.error);
-                                                        }
-                                                    } catch (error) {
-                                                        toast.error('Failed to get database structure');
-                                                    }
-                                                }}
-                                                className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors"
-                                            >
-                                                View Database Structure
-                                            </button>
-                                        </div>
-                                    </div>
-                                    
-                                    {/* Database Stats Section */}
-                                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                                        <h3 className="text-xl font-semibold mb-4 dark:text-white">Database Statistics</h3>
-                                        <p className="text-gray-600 dark:text-gray-400 mb-4">
-                                            View current database statistics and health information.
-                                        </p>
-                                        
-                                        <button
-                                            onClick={async () => {
-                                                try {
-                                                    const stats = await getDatabaseStats();
-                                                    if (stats.success && stats.stats) {
-                                                        const message = `Foods: ${stats.stats.totalFoods}, Orders: ${stats.stats.totalOrders}, Users: ${stats.stats.totalUsers}`;
-                                                        toast.success(message);
-                                                        console.log('Database Stats:', stats.stats);
-                                                    } else {
-                                                        toast.error('Failed to get database stats');
-                                                    }
-                                                } catch (error) {
-                                                    toast.error('Failed to get database stats');
-                                                }
-                                            }}
-                                            className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors"
-                                        >
-                                            Get Database Stats
-                                        </button>
-                                    </div>
-                                    
-                                    {/* Instructions */}
-                                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                                        <h4 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">Instructions:</h4>
-                                        <ul className="text-yellow-700 dark:text-yellow-300 text-sm space-y-1">
-                                            <li>• <strong>Check & Fix Order Paths:</strong> Scans for orders saved at wrong paths and moves them to tfc/orders</li>
-                                            <li>• <strong>Test Order Placement:</strong> Places a test order to verify current code is working correctly</li>
-                                            <li>• <strong>View Database Structure:</strong> Shows the current database structure in browser console</li>
-                                            <li>• <strong>Get Database Stats:</strong> Shows counts of foods, orders, and users</li>
-                                        </ul>
-                                    </div>
                                 </div>
                             </div>
                         )}

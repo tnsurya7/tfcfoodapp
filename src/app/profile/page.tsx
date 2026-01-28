@@ -19,17 +19,16 @@ import {
 import Link from 'next/link';
 import { useEmailAuth } from '@/contexts/EmailAuthContext';
 import EmailProtectedRoute from '@/components/auth/EmailProtectedRoute';
-import { useFirebaseOrderStore } from '@/store/firebaseOrderStore';
+import { getOrdersByEmail } from '@/lib/firebaseHelpers';
 import OrderTracker from '@/components/orders/OrderTracker';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import toast from "@/lib/toast";
 import ClientOnly from '@/components/ClientOnly';
-import { generateUserId } from '@/lib/firebaseHelpers';
 
 function ProfileContent() {
     const router = useRouter();
     const { currentUser: emailUser, logout } = useEmailAuth();
-    const { orders, fetchUserOrders } = useFirebaseOrderStore();
+    const [orders, setOrders] = useState([]);
     const [activeTab, setActiveTab] = useState<'profile' | 'orders'>('orders');
     const [isLoading, setIsLoading] = useState(true);
 
@@ -41,7 +40,18 @@ function ProfileContent() {
         const loadOrders = async () => {
             if (emailUser?.email) {
                 setIsLoading(true);
-                await fetchUserOrders(emailUser.email);
+                try {
+                    const res = await getOrdersByEmail(emailUser.email);
+                    if (res.success) {
+                        setOrders(res.orders);
+                    } else {
+                        console.error('Failed to load orders:', res.error);
+                        setOrders([]);
+                    }
+                } catch (error) {
+                    console.error('Error loading orders:', error);
+                    setOrders([]);
+                }
                 setIsLoading(false);
             } else {
                 setIsLoading(false);
