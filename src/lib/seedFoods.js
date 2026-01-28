@@ -272,22 +272,32 @@ export async function seedFoodsIfEmpty() {
         const foodsRef = ref(database, "tfc/foods");
         const snapshot = await get(foodsRef);
         
-        if (!snapshot.exists()) {
-            console.log('Seeding foods to Firebase...');
-            for (const food of defaultFoods) {
+        const existingFoods = snapshot.val() || {};
+        
+        console.log("Checking missing foods...");
+        let addedCount = 0;
+        
+        for (const food of defaultFoods) {
+            const alreadyExists = Object.values(existingFoods)
+                .some(f => f.name.toLowerCase() === food.name.toLowerCase());
+            
+            if (!alreadyExists) {
                 const newFoodRef = push(foodsRef);
+                
                 await set(newFoodRef, {
                     ...food,
                     id: newFoodRef.key,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 });
+                
+                addedCount++;
+                console.log(`Added: ${food.name}`);
             }
-            console.log(`Successfully seeded ${defaultFoods.length} foods to Firebase`);
-        } else {
-            console.log('Foods already exist in Firebase, skipping seed');
         }
+        
+        console.log(`Added ${addedCount} missing foods`);
     } catch (error) {
-        console.error('Error seeding foods:', error);
+        console.error("Error seeding foods:", error);
     }
 }
