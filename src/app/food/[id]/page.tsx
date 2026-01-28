@@ -110,12 +110,12 @@ export default function FoodDetailsPage({ params }: { params: Promise<{ id: stri
                                 className="object-cover"
                                 priority
                             />
-                            {food.isPopular && (
+                            {food.popular && (
                                 <div className="absolute top-4 left-4 bg-primary text-white px-4 py-2 rounded-full font-bold shadow-lg">
                                     ⭐ Popular
                                 </div>
                             )}
-                            {food.isSpecial && (
+                            {food.special && (
                                 <div className="absolute top-4 right-4 bg-secondary text-white px-4 py-2 rounded-full font-bold shadow-lg">
                                     🔥 Special Offer
                                 </div>

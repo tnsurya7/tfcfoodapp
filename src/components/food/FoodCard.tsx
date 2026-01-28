@@ -54,12 +54,12 @@ export default function FoodCard({ food }: FoodCardProps) {
 
                     {/* Badges */}
                     <div className="absolute top-3 left-3 flex flex-col space-y-2">
-                        {food.isPopular && (
+                        {food.popular && (
                             <span className="bg-primary text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
                                 ⭐ Popular
                             </span>
                         )}
-                        {food.isSpecial && (
+                        {food.special && (
                             <span className="bg-secondary text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
                                 🔥 Special
                             </span>
