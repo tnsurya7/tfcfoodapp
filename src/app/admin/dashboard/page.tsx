@@ -19,6 +19,7 @@ import toast from "@/lib/toast";
 import Image from 'next/image';
 import { FoodItem } from '@/store/cartStore';
 import FoodForm from '@/components/admin/FoodForm';
+import DataMigration from '@/components/admin/DataMigration';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { 
@@ -35,7 +36,7 @@ import {
 export default function AdminDashboard() {
     const router = useRouter();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [activeTab, setActiveTab] = useState<'foods' | 'orders' | 'customers'>('foods');
+    const [activeTab, setActiveTab] = useState<'foods' | 'orders' | 'customers' | 'migration'>('foods');
     const [showFoodForm, setShowFoodForm] = useState(false);
     const [editingFood, setEditingFood] = useState<FoodItem | null>(null);
     const [loading, setLoading] = useState(true);
@@ -51,7 +52,7 @@ export default function AdminDashboard() {
     });
 
     useEffect(() => {
-        const loggedIn = localStorage.getItem('adminLoggedIn');
+        const loggedIn = sessionStorage.getItem('adminLoggedIn');
         if (loggedIn !== 'true') {
             router.push('/admin');
         } else {
@@ -112,7 +113,7 @@ export default function AdminDashboard() {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('adminLoggedIn');
+        sessionStorage.removeItem('adminLoggedIn');
         toast.success('Logged out successfully');
         router.push('/admin');
     };
@@ -409,6 +410,15 @@ export default function AdminDashboard() {
                             >
                                 Customers (0)
                             </button>
+                            <button
+                                onClick={() => setActiveTab('migration')}
+                                className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'migration'
+                                    ? 'bg-primary text-white'
+                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                    }`}
+                            >
+                                Migration
+                            </button>
                         </div>
                     </div>
 
@@ -646,6 +656,12 @@ export default function AdminDashboard() {
                                         </div>
                                     )}
                                 </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'migration' && (
+                            <div>
+                                <DataMigration />
                             </div>
                         )}
                     </div>

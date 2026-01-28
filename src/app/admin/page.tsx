@@ -14,7 +14,7 @@ export default function AdminPage() {
 
     useEffect(() => {
         // Check if already logged in
-        const isLoggedIn = localStorage.getItem('adminLoggedIn');
+        const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
         if (isLoggedIn === 'true') {
             router.push('/admin/dashboard');
         }
@@ -29,7 +29,7 @@ export default function AdminPage() {
 
         // Simple authentication (in production, use proper backend authentication)
         if (credentials.username === process.env.NEXT_PUBLIC_ADMIN_USERNAME && credentials.password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
-            localStorage.setItem('adminLoggedIn', 'true');
+            sessionStorage.setItem('adminLoggedIn', 'true');
             toast.success('Login successful!');
             router.push('/admin/dashboard');
         } else {

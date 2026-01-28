@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import MigrationChecker from "@/components/MigrationChecker";
 import { EmailAuthProvider } from "@/contexts/EmailAuthContext";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -34,6 +35,7 @@ export default function RootLayout({
         <html lang="en">
             <body className={inter.className}>
                 <EmailAuthProvider>
+                    <MigrationChecker />
                     <Header />
                     <main className="min-h-screen">
                         {children}
