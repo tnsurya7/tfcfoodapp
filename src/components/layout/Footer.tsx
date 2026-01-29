@@ -121,16 +121,23 @@ export default function Footer() {
                         <ul className="space-y-3 text-sm">
                             <li className="flex items-start space-x-2">
                                 <MapPin className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                                <span>Nasiyanur, Erode, Tamil Nadu</span>
+                                <div>
+                                    <div className="font-semibold text-white">TFC Thozha Fried Chicken</div>
+                                    <div>BKN School Opposite</div>
+                                    <div>Nasiyanur, Erode</div>
+                                    <div>Tamil Nadu, India</div>
+                                </div>
                             </li>
                             <li className="flex items-center space-x-2">
                                 <Phone className="w-5 h-5 text-primary flex-shrink-0" />
-                                <span>+91 6379151006</span>
+                                <div>
+                                    <div>+91 6379151006</div>
+                                    <div>+91 9566376453</div>
+                                </div>
                             </li>
                             <li className="text-xs">
                                 <div className="font-semibold text-white mb-1">Business Hours:</div>
-                                <div>Mon-Fri: 4:00 PM - 11:00 PM</div>
-                                <div>Sunday: 12:00 PM - 11:00 PM</div>
+                                <div>Monday - Sunday: 12:00 PM - 11:00 PM</div>
                             </li>
                         </ul>
                     </div>

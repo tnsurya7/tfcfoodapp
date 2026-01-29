@@ -41,8 +41,11 @@ function CheckoutContent() {
     const [showUpiForm, setShowUpiForm] = useState(false);
 
     // Pincode auto-fill states
-    const [availableAreas, setAvailableAreas] = useState([]);
+    const [availableAreas, setAvailableAreas] = useState<Array<{pincode: string; area: string; district: string; state: string}>>([]);
     const [showAreaDropdown, setShowAreaDropdown] = useState(false);
+
+    // Order type state
+    const [orderType, setOrderType] = useState("delivery");
 
     // Load user cart when component mounts
     useEffect(() => {
@@ -76,7 +79,7 @@ function CheckoutContent() {
     }
 
     const totalPrice = getTotalPrice();
-    const deliveryFee = totalPrice > 500 ? 0 : 40;
+    const deliveryFee = orderType === "pickup" ? 0 : (totalPrice > 500 ? 0 : 40);
     const finalTotal = totalPrice + deliveryFee;
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -206,9 +209,18 @@ function CheckoutContent() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!formData.name || !formData.phone || !formData.address || !formData.pincode || !formData.area || !formData.district || !formData.state) {
-            toast.error('Please fill in all address fields');
-            return;
+        // Validation based on order type
+        if (orderType === "delivery") {
+            if (!formData.name || !formData.phone || !formData.address || !formData.pincode || !formData.area || !formData.district || !formData.state) {
+                toast.error('Please fill in all address fields');
+                return;
+            }
+        } else {
+            // For pickup, only name and phone are required
+            if (!formData.name || !formData.phone) {
+                toast.error('Please fill in name and phone number');
+                return;
+            }
         }
 
         // UPI Payment Validation
@@ -228,14 +240,17 @@ function CheckoutContent() {
                 customer: formData.name,
                 phone: formData.phone,
                 email: emailUser.email,
-                address: `${formData.address}, ${formData.area}, ${formData.district}, ${formData.state} - ${formData.pincode}`,
-                addressDetails: {
+                orderType: orderType,
+                address: orderType === "delivery" 
+                    ? `${formData.address}, ${formData.area}, ${formData.district}, ${formData.state} - ${formData.pincode}`
+                    : "Store Pickup - TFC Thozha Fried Chicken, BKN School Opposite, Nasiyanur, Erode, Tamil Nadu, India",
+                addressDetails: orderType === "delivery" ? {
                     address: formData.address,
                     area: formData.area,
                     district: formData.district,
                     state: formData.state,
                     pincode: formData.pincode
-                },
+                } : null,
                 items: items.map(item => ({
                     id: item.id,
                     name: item.name,
@@ -338,10 +353,77 @@ function CheckoutContent() {
                     </h1>
 
                     <form onSubmit={handleSubmit} className="space-y-8">
-                        {/* Delivery Information */}
+                        {/* Order Type Selection */}
                         <div className="bg-white rounded-xl shadow-md p-6">
                             <h2 className="text-2xl font-bold mb-6">
-                                Delivery Information
+                                Order Type
+                            </h2>
+                            <div className="space-y-3">
+                                {/* Delivery Option */}
+                                <div
+                                    onClick={() => setOrderType('delivery')}
+                                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${orderType === 'delivery'
+                                            ? 'border-red-500 bg-red-50'
+                                            : 'border-gray-200 hover:border-red-300'
+                                        }`}
+                                >
+                                    <div className="flex items-center space-x-3">
+                                        <div className="w-6 h-6 rounded-full border-2 border-red-500 flex items-center justify-center">
+                                            {orderType === 'delivery' && (
+                                                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <h3 className="font-bold">Home Delivery</h3>
+                                            <p className="text-sm text-gray-600">
+                                                Get your order delivered to your doorstep
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Pickup Option */}
+                                <div
+                                    onClick={() => setOrderType('pickup')}
+                                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${orderType === 'pickup'
+                                            ? 'border-red-500 bg-red-50'
+                                            : 'border-gray-200 hover:border-red-300'
+                                        }`}
+                                >
+                                    <div className="flex items-center space-x-3">
+                                        <div className="w-6 h-6 rounded-full border-2 border-red-500 flex items-center justify-center">
+                                            {orderType === 'pickup' && (
+                                                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <h3 className="font-bold">Store Pickup (Come & Collect)</h3>
+                                            <p className="text-sm text-gray-600">
+                                                Pick up your order from our store
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Store Location for Pickup */}
+                            {orderType === 'pickup' && (
+                                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                    <h3 className="text-lg font-semibold mb-2 text-blue-800">Store Location:</h3>
+                                    <div className="text-gray-700">
+                                        <p className="font-semibold">TFC Thozha Fried Chicken</p>
+                                        <p>BKN School Opposite</p>
+                                        <p>Nasiyanur, Erode</p>
+                                        <p>Tamil Nadu, India</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Customer Information */}
+                        <div className="bg-white rounded-xl shadow-md p-6">
+                            <h2 className="text-2xl font-bold mb-6">
+                                Customer Information
                             </h2>
                             <div className="space-y-4">
                                 <div>
@@ -372,111 +454,121 @@ function CheckoutContent() {
                                         required
                                     />
                                 </div>
-                                
-                                {/* Pincode Field */}
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Pincode *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="pincode"
-                                        value={formData.pincode}
-                                        onChange={handlePincodeChange}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                                        placeholder="Enter 6-digit pincode"
-                                        maxLength={6}
-                                        required
-                                    />
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        Enter pincode to auto-fill area, district, and state
-                                    </p>
-                                </div>
+                            </div>
+                        </div>
 
-                                {/* Auto-filled Address Fields */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Delivery Information - Only show for delivery */}
+                        {orderType === "delivery" && (
+                            <div className="bg-white rounded-xl shadow-md p-6">
+                                <h2 className="text-2xl font-bold mb-6">
+                                    Delivery Information
+                                </h2>
+                                <div className="space-y-4">
+                                    {/* Pincode Field */}
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                            Area *
-                                        </label>
-                                        {showAreaDropdown ? (
-                                            <div className="relative">
-                                                <select
-                                                    value={formData.area}
-                                                    onChange={(e) => handleAreaSelect(e.target.value)}
-                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white"
-                                                    required
-                                                >
-                                                    <option value="">Select Area</option>
-                                                    {[...new Set(availableAreas.map(item => item.area))].map((area, index) => (
-                                                        <option key={index} value={area}>
-                                                            {area}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                <p className="text-xs text-green-600 mt-1">
-                                                    Multiple areas found for this pincode. Please select one.
-                                                </p>
-                                            </div>
-                                        ) : (
-                                            <input
-                                                type="text"
-                                                name="area"
-                                                value={formData.area}
-                                                onChange={handleInputChange}
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-gray-50"
-                                                placeholder="Area will be auto-filled"
-                                                required
-                                            />
-                                        )}
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                            District *
+                                            Pincode *
                                         </label>
                                         <input
                                             type="text"
-                                            name="district"
-                                            value={formData.district}
+                                            name="pincode"
+                                            value={formData.pincode}
+                                            onChange={handlePincodeChange}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                            placeholder="Enter 6-digit pincode"
+                                            maxLength={6}
+                                            required
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Enter pincode to auto-fill area, district, and state
+                                        </p>
+                                    </div>
+
+                                    {/* Auto-filled Address Fields */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                Area *
+                                            </label>
+                                            {showAreaDropdown ? (
+                                                <div className="relative">
+                                                    <select
+                                                        value={formData.area}
+                                                        onChange={(e) => handleAreaSelect(e.target.value)}
+                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white"
+                                                        required
+                                                    >
+                                                        <option value="">Select Area</option>
+                                                        {[...new Set(availableAreas.map(item => item.area))].map((area, index) => (
+                                                            <option key={index} value={area}>
+                                                                {area}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    <p className="text-xs text-green-600 mt-1">
+                                                        Multiple areas found for this pincode. Please select one.
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                <input
+                                                    type="text"
+                                                    name="area"
+                                                    value={formData.area}
+                                                    onChange={handleInputChange}
+                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-gray-50"
+                                                    placeholder="Area will be auto-filled"
+                                                    required
+                                                />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                District *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="district"
+                                                value={formData.district}
+                                                onChange={handleInputChange}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-gray-50"
+                                                placeholder="District will be auto-filled"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            State *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="state"
+                                            value={formData.state}
                                             onChange={handleInputChange}
                                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-gray-50"
-                                            placeholder="District will be auto-filled"
+                                            placeholder="State will be auto-filled"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            Street Address *
+                                        </label>
+                                        <textarea
+                                            name="address"
+                                            value={formData.address}
+                                            onChange={handleInputChange}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                            rows={3}
+                                            placeholder="House/Flat No., Street Name, Landmark"
                                             required
                                         />
                                     </div>
                                 </div>
-
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        State *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="state"
-                                        value={formData.state}
-                                        onChange={handleInputChange}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-gray-50"
-                                        placeholder="State will be auto-filled"
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Street Address *
-                                    </label>
-                                    <textarea
-                                        name="address"
-                                        value={formData.address}
-                                        onChange={handleInputChange}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                                        rows={3}
-                                        placeholder="House/Flat No., Street Name, Landmark"
-                                        required
-                                    />
-                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Payment Method */}
                         <div className="bg-white rounded-xl shadow-md p-6">
@@ -484,7 +576,7 @@ function CheckoutContent() {
                                 Payment Method
                             </h2>
                             <div className="space-y-3">
-                                {/* Cash on Delivery */}
+                                {/* Cash Payment - Different labels for delivery vs pickup */}
                                 <div
                                     onClick={() => handlePaymentMethodChange('cod')}
                                     className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${formData.paymentMethod === 'cod'
@@ -495,9 +587,14 @@ function CheckoutContent() {
                                     <div className="flex items-center space-x-3">
                                         <Banknote className="w-6 h-6 text-red-500" />
                                         <div className="flex-1">
-                                            <h3 className="font-bold">Cash on Delivery</h3>
+                                            <h3 className="font-bold">
+                                                {orderType === 'pickup' ? 'Pay at Store (Cash)' : 'Cash on Delivery'}
+                                            </h3>
                                             <p className="text-sm text-gray-600">
-                                                Pay when you receive your order
+                                                {orderType === 'pickup' 
+                                                    ? 'Pay with cash when you collect your order'
+                                                    : 'Pay when you receive your order'
+                                                }
                                             </p>
                                         </div>
                                         {formData.paymentMethod === 'cod' && (
@@ -508,7 +605,7 @@ function CheckoutContent() {
                                     </div>
                                 </div>
 
-                                {/* UPI */}
+                                {/* UPI Payment */}
                                 <div
                                     onClick={() => handlePaymentMethodChange('upi')}
                                     className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${formData.paymentMethod === 'upi'
@@ -519,9 +616,9 @@ function CheckoutContent() {
                                     <div className="flex items-center space-x-3">
                                         <Smartphone className="w-6 h-6 text-red-500" />
                                         <div className="flex-1">
-                                            <h3 className="font-bold">UPI Payment</h3>
+                                            <h3 className="font-bold">UPI Online Pay</h3>
                                             <p className="text-sm text-gray-600">
-                                                Pay via UPI apps
+                                                Pay online via UPI apps
                                             </p>
                                         </div>
                                         {formData.paymentMethod === 'upi' && (
@@ -642,9 +739,13 @@ function CheckoutContent() {
                                         <span className="font-semibold">₹{totalPrice.toFixed(0)}</span>
                                     </div>
                                     <div className="flex justify-between text-gray-600 mt-2">
-                                        <span>Delivery Fee</span>
+                                        <span>
+                                            {orderType === 'pickup' ? 'Pickup' : 'Delivery Fee'}
+                                        </span>
                                         <span className="font-semibold">
-                                            {deliveryFee === 0 ? (
+                                            {orderType === 'pickup' ? (
+                                                <span className="text-green-500">FREE</span>
+                                            ) : deliveryFee === 0 ? (
                                                 <span className="text-green-500">FREE</span>
                                             ) : (
                                                 `₹${deliveryFee.toFixed(0)}`

@@ -318,9 +318,10 @@ function AdminDashboardContent() {
                     order.id.substring(0, 12) + '...',
                     order.customer,
                     order.phone,
+                    order.orderType === 'pickup' ? 'Pickup' : 'Delivery',
                     itemsBreakdown,
                     paymentInfo,
-                    order.address?.substring(0, 30) + '...' || 'N/A',
+                    order.address?.substring(0, 25) + '...' || 'N/A',
                     `Rs. ${order.total}`,
                     order.status,
                     new Date(order.createdAt).toLocaleDateString() + ' ' + new Date(order.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
@@ -328,21 +329,22 @@ function AdminDashboardContent() {
             });
             
             autoTable(doc, {
-                head: [['Order ID', 'Customer', 'Phone', 'Items', 'Payment', 'Address', 'Total', 'Status', 'Ordered At']],
+                head: [['Order ID', 'Customer', 'Phone', 'Type', 'Items', 'Payment', 'Address', 'Total', 'Status', 'Ordered At']],
                 body: orderData,
                 startY: currentY + 10,
                 styles: { fontSize: 7 },
                 headStyles: { fillColor: [211, 47, 47] },
                 columnStyles: {
-                    0: { cellWidth: 20 },
-                    1: { cellWidth: 18 },
-                    2: { cellWidth: 18 },
-                    3: { cellWidth: 35 },
-                    4: { cellWidth: 15 },
-                    5: { cellWidth: 25 },
-                    6: { cellWidth: 15 },
-                    7: { cellWidth: 15 },
-                    8: { cellWidth: 25 }
+                    0: { cellWidth: 18 },
+                    1: { cellWidth: 16 },
+                    2: { cellWidth: 16 },
+                    3: { cellWidth: 12 },
+                    4: { cellWidth: 30 },
+                    5: { cellWidth: 15 },
+                    6: { cellWidth: 20 },
+                    7: { cellWidth: 12 },
+                    8: { cellWidth: 12 },
+                    9: { cellWidth: 20 }
                 }
             });
             
@@ -844,6 +846,16 @@ function AdminDashboardContent() {
                                                             </p>
                                                             <p className="text-gray-600 dark:text-gray-400 text-sm">
                                                                 <strong>Phone:</strong> {order.phone}
+                                                            </p>
+                                                            <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                                                <strong>Order Type:</strong> 
+                                                                <span className={`ml-1 px-2 py-1 rounded-full text-xs font-semibold ${
+                                                                    order.orderType === 'pickup' 
+                                                                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                                                                        : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                                                                }`}>
+                                                                    {order.orderType === 'pickup' ? 'Store Pickup' : 'Home Delivery'}
+                                                                </span>
                                                             </p>
                                                             <p className="text-gray-600 dark:text-gray-400 text-sm">
                                                                 <strong>Payment:</strong> {order.paymentMethod?.toUpperCase() || 'COD'}
