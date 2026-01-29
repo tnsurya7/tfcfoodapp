@@ -236,10 +236,18 @@ function CheckoutContent() {
             }
         }
 
-        // UPI Payment Validation - Production Ready
+        // UPI Payment Validation - Enhanced Required Fields
         if (formData.paymentMethod === "upi") {
-            if (!upiAppUsed || !upiUserName || upiMobile.length !== 10) {
-                toast.error("Enter UPI App, Name and 10-digit Mobile Number");
+            if (!upiAppUsed) {
+                toast.error("Please select a UPI app first");
+                return;
+            }
+            if (!upiUserName || upiUserName.trim().length < 2) {
+                toast.error("Please enter your full name as per UPI");
+                return;
+            }
+            if (!upiMobile || upiMobile.length !== 10) {
+                toast.error("Please enter a valid 10-digit mobile number");
                 return;
             }
         }
@@ -718,71 +726,93 @@ function CheckoutContent() {
                                         </div>
                                     )}
 
-                                    {/* UPI Details Form - Production Ready */}
+                                    {/* UPI Details Form - Enhanced Required Fields */}
                                     <div className="space-y-4">
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                UPI App Used *
+                                                UPI App Used <span className="text-red-500">*</span>
                                             </label>
                                             <input
                                                 type="text"
                                                 value={upiAppUsed}
                                                 readOnly
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
-                                                placeholder="Select UPI app above"
+                                                className={`w-full px-4 py-3 border rounded-lg bg-gray-50 text-gray-600 ${
+                                                    !upiAppUsed ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                                                }`}
+                                                placeholder="Select UPI app above first"
                                                 required={formData.paymentMethod === "upi"}
                                             />
+                                            {!upiAppUsed && (
+                                                <p className="text-red-500 text-xs mt-1">Please select a UPI app above</p>
+                                            )}
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                Your UPI Name *
+                                                Your UPI Name <span className="text-red-500">*</span>
                                             </label>
                                             <input
                                                 type="text"
                                                 value={upiUserName}
                                                 onChange={(e) => setUpiUserName(e.target.value)}
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                                    formData.paymentMethod === "upi" && (!upiUserName || upiUserName.trim().length < 2) 
+                                                        ? 'border-red-300' : 'border-gray-300'
+                                                }`}
                                                 placeholder="Your full name as per UPI"
                                                 required={formData.paymentMethod === "upi"}
                                             />
+                                            {formData.paymentMethod === "upi" && (!upiUserName || upiUserName.trim().length < 2) && (
+                                                <p className="text-red-500 text-xs mt-1">Enter your full name (minimum 2 characters)</p>
+                                            )}
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                Your UPI Mobile Number *
+                                                Your UPI Mobile Number <span className="text-red-500">*</span>
                                             </label>
                                             <input
                                                 type="tel"
                                                 maxLength={10}
                                                 value={upiMobile}
                                                 onChange={(e) => setUpiMobile(e.target.value.replace(/\D/g, ''))}
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                                    formData.paymentMethod === "upi" && upiMobile.length !== 10 
+                                                        ? 'border-red-300' : 'border-gray-300'
+                                                }`}
                                                 placeholder="10-digit mobile number"
                                                 required={formData.paymentMethod === "upi"}
                                             />
+                                            {formData.paymentMethod === "upi" && upiMobile.length !== 10 && (
+                                                <p className="text-red-500 text-xs mt-1">
+                                                    Enter exactly 10 digits ({upiMobile.length}/10)
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
 
                                     <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                                         <p className="text-sm text-yellow-800">
-                                            <strong>Instructions:</strong>
+                                            <strong>Important Instructions:</strong>
                                         </p>
                                         <ol className="text-sm text-yellow-700 mt-1 list-decimal list-inside space-y-1">
                                             {isMobile() ? (
                                                 <>
-                                                    <li>Click on your preferred UPI app above</li>
-                                                    <li>Complete the payment of ₹{finalTotal}</li>
-                                                    <li>Enter your name and mobile number below</li>
+                                                    <li><strong>Select UPI app</strong> from buttons above</li>
+                                                    <li><strong>Complete payment</strong> of ₹{finalTotal}</li>
+                                                    <li><strong>Fill all required fields</strong> below (marked with *)</li>
                                                     <li>Click "Place Order" to confirm</li>
                                                 </>
                                             ) : (
                                                 <>
                                                     <li>Copy UPI name and mobile from above</li>
                                                     <li>Open your UPI app and search by mobile number</li>
-                                                    <li>Pay ₹{finalTotal} to the merchant</li>
-                                                    <li>Enter your details below and place order</li>
+                                                    <li><strong>Pay ₹{finalTotal}</strong> to the merchant</li>
+                                                    <li><strong>Fill all required fields</strong> below and place order</li>
                                                 </>
                                             )}
                                         </ol>
+                                        <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                                            <strong>Note:</strong> All UPI fields are mandatory. Order cannot be placed without complete UPI details.
+                                        </div>
                                     </div>
                                 </div>
                             )}
