@@ -882,7 +882,7 @@ function AdminDashboardContent() {
                                                                 })()}
                                                                 {order.paymentMethod === 'upi' && order.upiDetails && (
                                                                     <span className="block text-xs text-blue-600 mt-1">
-                                                                        App: {order.upiDetails.app} | Txn: {order.upiDetails.transactionId}
+                                                                        App: {order.upiDetails.app} | UPI ID: {order.upiDetails.userUpiId || order.upiDetails.transactionId}
                                                                     </span>
                                                                 )}
                                                             </p>
