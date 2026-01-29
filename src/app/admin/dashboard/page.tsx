@@ -302,18 +302,24 @@ function AdminDashboardContent() {
             doc.setFontSize(16);
             doc.text('Recent Orders', 20, currentY);
             
-            const orderData = orders.slice(0, 8).map(order => {
+                const orderData = orders.slice(0, 8).map(order => {
                 // Build items breakdown
                 const itemsBreakdown = order.items?.map((item: any) => 
                     `${item.name} x${item.qty || item.quantity || 1} = Rs.${((item.price || 0) * (item.qty || item.quantity || 1)).toFixed(0)}`
                 ).join(', ') || 'No items';
+                
+                // Build payment info
+                let paymentInfo = order.paymentMethod?.toUpperCase() || 'COD';
+                if (order.paymentMethod === 'upi' && order.upiDetails) {
+                    paymentInfo += ` (${order.upiDetails.app}: ${order.upiDetails.transactionId})`;
+                }
                 
                 return [
                     order.id.substring(0, 12) + '...',
                     order.customer,
                     order.phone,
                     itemsBreakdown,
-                    order.paymentMethod?.toUpperCase() || 'COD',
+                    paymentInfo,
                     order.address?.substring(0, 30) + '...' || 'N/A',
                     `Rs. ${order.total}`,
                     order.status,
@@ -841,6 +847,11 @@ function AdminDashboardContent() {
                                                             </p>
                                                             <p className="text-gray-600 dark:text-gray-400 text-sm">
                                                                 <strong>Payment:</strong> {order.paymentMethod?.toUpperCase() || 'COD'}
+                                                                {order.paymentMethod === 'upi' && order.upiDetails && (
+                                                                    <span className="block text-xs text-blue-600 mt-1">
+                                                                        App: {order.upiDetails.app} | Txn: {order.upiDetails.transactionId}
+                                                                    </span>
+                                                                )}
                                                             </p>
                                                         </div>
                                                         <div className="space-y-1">

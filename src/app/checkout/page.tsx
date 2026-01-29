@@ -30,6 +30,11 @@ function CheckoutContent() {
         paymentMethod: 'cod',
     });
 
+    // UPI Payment States
+    const [upiApp, setUpiApp] = useState("");
+    const [upiTxnId, setUpiTxnId] = useState("");
+    const [showUpiForm, setShowUpiForm] = useState(false);
+
     // Load user cart when component mounts
     useEffect(() => {
         const loadCart = async () => {
@@ -77,6 +82,30 @@ function CheckoutContent() {
             ...formData,
             paymentMethod: method,
         });
+        
+        // Show UPI form when UPI is selected
+        if (method === "upi") {
+            setShowUpiForm(true);
+        } else {
+            setShowUpiForm(false);
+            setUpiApp("");
+            setUpiTxnId("");
+        }
+    };
+
+    // UPI Payment Configuration
+    const MERCHANT_UPI = process.env.NEXT_PUBLIC_UPI_ID || ""; // No fallback - must be set in env
+    const MERCHANT_NAME = process.env.NEXT_PUBLIC_UPI_MERCHANT_NAME || ""; // No fallback - must be set in env
+    
+    const openUPI = (app: string) => {
+        const amount = finalTotal;
+        const url = `upi://pay?pa=${MERCHANT_UPI}&pn=${MERCHANT_NAME}&am=${amount}&cu=INR&tn=Food Order Payment`;
+        
+        // Set the app name for tracking
+        setUpiApp(app === 'gpay' ? 'Google Pay' : app === 'phonepe' ? 'PhonePe' : 'Paytm');
+        
+        // Open UPI app
+        window.location.href = url;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -85,6 +114,14 @@ function CheckoutContent() {
         if (!formData.name || !formData.phone || !formData.address) {
             toast.error('Please fill in all fields');
             return;
+        }
+
+        // UPI Payment Validation
+        if (formData.paymentMethod === "upi") {
+            if (!upiApp || !upiTxnId) {
+                toast.error("Please enter UPI app name and transaction ID");
+                return;
+            }
         }
 
         setIsProcessing(true);
@@ -105,6 +142,12 @@ function CheckoutContent() {
                 })),
                 total: finalTotal,
                 paymentMethod: formData.paymentMethod,
+                upiDetails: formData.paymentMethod === "upi" 
+                    ? {
+                        app: upiApp,
+                        transactionId: upiTxnId
+                    }
+                    : null,
             };
 
             // OPTIMISTIC UI UPDATE: Show success immediately
@@ -322,6 +365,92 @@ function CheckoutContent() {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* UPI Payment Interface */}
+                            {formData.paymentMethod === "upi" && (
+                                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                    <h3 className="text-lg font-semibold mb-4 text-blue-800">Complete UPI Payment</h3>
+                                    
+                                    {/* UPI App Buttons */}
+                                    <div className="mb-4">
+                                        <p className="text-sm text-gray-600 mb-3">Select your UPI app to pay ₹{finalTotal}:</p>
+                                        <div className="grid grid-cols-3 gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => openUPI("gpay")}
+                                                className="flex flex-col items-center p-3 bg-white border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                                            >
+                                                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center mb-2">
+                                                    <span className="text-white text-xs font-bold">G</span>
+                                                </div>
+                                                <span className="text-xs font-medium">Google Pay</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => openUPI("phonepe")}
+                                                className="flex flex-col items-center p-3 bg-white border border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors"
+                                            >
+                                                <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center mb-2">
+                                                    <span className="text-white text-xs font-bold">P</span>
+                                                </div>
+                                                <span className="text-xs font-medium">PhonePe</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => openUPI("paytm")}
+                                                className="flex flex-col items-center p-3 bg-white border border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                                            >
+                                                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mb-2">
+                                                    <span className="text-white text-xs font-bold">P</span>
+                                                </div>
+                                                <span className="text-xs font-medium">Paytm</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* UPI Details Form */}
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                UPI App Used *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={upiApp}
+                                                onChange={(e) => setUpiApp(e.target.value)}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                placeholder="e.g., Google Pay, PhonePe, Paytm"
+                                                required={formData.paymentMethod === "upi"}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                Transaction ID *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={upiTxnId}
+                                                onChange={(e) => setUpiTxnId(e.target.value)}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                placeholder="Enter UPI transaction ID"
+                                                required={formData.paymentMethod === "upi"}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                        <p className="text-sm text-yellow-800">
+                                            <strong>Instructions:</strong>
+                                        </p>
+                                        <ol className="text-sm text-yellow-700 mt-1 list-decimal list-inside space-y-1">
+                                            <li>Click on your preferred UPI app above</li>
+                                            <li>Complete the payment of ₹{finalTotal}</li>
+                                            <li>Enter the app name and transaction ID here</li>
+                                            <li>Click "Place Order" to confirm</li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Order Summary */}

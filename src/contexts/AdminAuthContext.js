@@ -1,8 +1,6 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect } from 'react';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 
 const AdminAuthContext = createContext();
 
@@ -19,34 +17,18 @@ export const AdminAuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!auth) {
-            setLoading(false);
-            return;
-        }
-
-        // Listen to Firebase auth state changes for admin
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                // Check if this is an admin user
-                const isAdmin = localStorage.getItem('isAdmin');
-                if (isAdmin === 'true') {
-                    setCurrentAdmin({
-                        uid: user.uid,
-                        email: user.email,
-                        isAdmin: true
-                    });
-                } else {
-                    setCurrentAdmin(null);
-                }
-            } else {
-                setCurrentAdmin(null);
-                localStorage.removeItem('isAdmin');
+        // Check if admin is already logged in (session storage for current session)
+        const adminSession = sessionStorage.getItem('adminSession');
+        if (adminSession) {
+            try {
+                const adminData = JSON.parse(adminSession);
+                setCurrentAdmin(adminData);
+            } catch (error) {
+                console.error('Error parsing admin session:', error);
+                sessionStorage.removeItem('adminSession');
             }
-            
-            setLoading(false);
-        });
-
-        return () => unsubscribe();
+        }
+        setLoading(false);
     }, []);
 
     const login = async (username, password) => {
@@ -57,47 +39,19 @@ export const AdminAuthProvider = ({ children }) => {
                 throw new Error('Invalid admin credentials');
             }
 
-            // Create a unique admin email for Firebase Auth
-            const adminEmail = `admin@${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}.com`;
+            // Create admin session data
+            const adminData = {
+                username: username,
+                isAdmin: true,
+                loginTime: new Date().toISOString()
+            };
+
+            // Store in session storage (persists during browser session)
+            sessionStorage.setItem('adminSession', JSON.stringify(adminData));
             
-            try {
-                // Try to sign in first
-                const userCredential = await signInWithEmailAndPassword(auth, adminEmail, password);
-                
-                // Mark as admin in localStorage
-                localStorage.setItem('isAdmin', 'true');
-                
-                setCurrentAdmin({
-                    uid: userCredential.user.uid,
-                    email: userCredential.user.email,
-                    isAdmin: true
-                });
-                
-                return { success: true };
-            } catch (signInError) {
-                // If sign in fails, try to create the admin account
-                if (signInError.code === 'auth/user-not-found' || signInError.code === 'auth/invalid-credential') {
-                    try {
-                        const userCredential = await createUserWithEmailAndPassword(auth, adminEmail, password);
-                        
-                        // Mark as admin in localStorage
-                        localStorage.setItem('isAdmin', 'true');
-                        
-                        setCurrentAdmin({
-                            uid: userCredential.user.uid,
-                            email: userCredential.user.email,
-                            isAdmin: true
-                        });
-                        
-                        return { success: true };
-                    } catch (createError) {
-                        console.error('Error creating admin account:', createError);
-                        throw createError;
-                    }
-                } else {
-                    throw signInError;
-                }
-            }
+            setCurrentAdmin(adminData);
+            
+            return { success: true };
         } catch (error) {
             console.error('Admin login error:', error);
             throw error;
@@ -107,10 +61,7 @@ export const AdminAuthProvider = ({ children }) => {
     const logout = async () => {
         try {
             setCurrentAdmin(null);
-            localStorage.removeItem('isAdmin');
-            
-            // Sign out from Firebase Auth
-            await signOut(auth);
+            sessionStorage.removeItem('adminSession');
         } catch (error) {
             console.error('Error logging out admin:', error);
         }
