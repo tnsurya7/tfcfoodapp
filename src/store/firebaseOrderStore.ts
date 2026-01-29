@@ -72,8 +72,11 @@ export const useFirebaseOrderStore = create<FirebaseOrderStore>((set, get) => ({
                 customer: orderData.customer,
                 phone: orderData.phone,
                 email: orderData.email,
+                orderType: orderData.orderType,
                 address: orderData.address,
+                addressDetails: orderData.addressDetails,
                 paymentMethod: orderData.paymentMethod,
+                upiDetails: orderData.upiDetails,
                 items: orderData.items,
                 total: orderData.total
             };
