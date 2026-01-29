@@ -17,18 +17,29 @@ export const AdminAuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Check if admin is already logged in (session storage for current session)
-        const adminSession = sessionStorage.getItem('adminSession');
-        if (adminSession) {
+        // Restore admin session from localStorage on app startup
+        const restoreAdminSession = () => {
             try {
-                const adminData = JSON.parse(adminSession);
-                setCurrentAdmin(adminData);
+                const savedAdmin = localStorage.getItem('tfc_admin');
+                if (savedAdmin) {
+                    const adminData = JSON.parse(savedAdmin);
+                    // Verify the session is still valid (optional: add expiry check here)
+                    if (adminData.isAdmin && adminData.username) {
+                        setCurrentAdmin(adminData);
+                        console.log('✅ Admin session restored:', adminData.username);
+                    } else {
+                        localStorage.removeItem('tfc_admin');
+                    }
+                }
             } catch (error) {
-                console.error('Error parsing admin session:', error);
-                sessionStorage.removeItem('adminSession');
+                console.error('Error restoring admin session:', error);
+                localStorage.removeItem('tfc_admin');
+            } finally {
+                setLoading(false);
             }
-        }
-        setLoading(false);
+        };
+
+        restoreAdminSession();
     }, []);
 
     const login = async (username, password) => {
@@ -46,10 +57,12 @@ export const AdminAuthProvider = ({ children }) => {
                 loginTime: new Date().toISOString()
             };
 
-            // Store in session storage (persists during browser session)
-            sessionStorage.setItem('adminSession', JSON.stringify(adminData));
+            // Store in localStorage for persistent login
+            localStorage.setItem('tfc_admin', JSON.stringify(adminData));
             
             setCurrentAdmin(adminData);
+            
+            console.log('✅ Admin logged in and session saved:', username);
             
             return { success: true };
         } catch (error) {
@@ -61,7 +74,9 @@ export const AdminAuthProvider = ({ children }) => {
     const logout = async () => {
         try {
             setCurrentAdmin(null);
-            sessionStorage.removeItem('adminSession');
+            // Clear persistent session
+            localStorage.removeItem('tfc_admin');
+            console.log('✅ Admin logged out and session cleared');
         } catch (error) {
             console.error('Error logging out admin:', error);
         }

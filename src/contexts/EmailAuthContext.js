@@ -1,7 +1,9 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect } from 'react';
-import { getUser, saveUser, updateUserLastLogin } from '@/lib/firebaseHelpers';
+import { getUser, saveUser, updateUserLastLogin, generateUserId } from '@/lib/firebaseHelpers';
+import { ref, get } from 'firebase/database';
+import { database } from '@/lib/firebase';
 
 const EmailAuthContext = createContext();
 
@@ -18,20 +20,39 @@ export const EmailAuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Check if user is already logged in (session storage for current session)
-        const userSession = sessionStorage.getItem('tfc_user_session');
-        if (userSession) {
+        // Restore user session from localStorage on app startup
+        const restoreUserSession = async () => {
             try {
-                const userData = JSON.parse(userSession);
-                setCurrentUser(userData);
-                // Update last login
-                updateUserLastLogin(userData.email).catch(console.error);
+                const savedUserId = localStorage.getItem('tfc_user');
+                if (!savedUserId) {
+                    setLoading(false);
+                    return;
+                }
+
+                // Fetch user data from Firebase using saved userId
+                const userRef = ref(database, `tfc/users/${savedUserId}`);
+                const snapshot = await get(userRef);
+                
+                if (snapshot.exists()) {
+                    const userData = snapshot.val();
+                    setCurrentUser(userData);
+                    // Update last login
+                    await updateUserLastLogin(userData.email);
+                    console.log('✅ User session restored:', userData.name);
+                } else {
+                    // User data not found in Firebase, clear localStorage
+                    localStorage.removeItem('tfc_user');
+                    console.log('❌ User data not found, cleared session');
+                }
             } catch (error) {
-                console.error('Error parsing user session:', error);
-                sessionStorage.removeItem('tfc_user_session');
+                console.error('Error restoring user session:', error);
+                localStorage.removeItem('tfc_user');
+            } finally {
+                setLoading(false);
             }
-        }
-        setLoading(false);
+        };
+
+        restoreUserSession();
     }, []);
 
     const login = async (userData) => {
@@ -40,8 +61,12 @@ export const EmailAuthProvider = ({ children }) => {
             const result = await saveUser(userData);
             if (result.success) {
                 setCurrentUser(result.user);
-                // Store user session data (persists during browser session)
-                sessionStorage.setItem('tfc_user_session', JSON.stringify(result.user));
+                
+                // Store userId in localStorage for persistent login
+                const userId = generateUserId(userData.email);
+                localStorage.setItem('tfc_user', userId);
+                
+                console.log('✅ User logged in and session saved:', result.user.name);
             }
         } catch (error) {
             console.error('Error logging in user:', error);
@@ -52,7 +77,9 @@ export const EmailAuthProvider = ({ children }) => {
     const logout = async () => {
         try {
             setCurrentUser(null);
-            sessionStorage.removeItem('tfc_user_session');
+            // Clear persistent session
+            localStorage.removeItem('tfc_user');
+            console.log('✅ User logged out and session cleared');
         } catch (error) {
             console.error('Error logging out:', error);
         }
