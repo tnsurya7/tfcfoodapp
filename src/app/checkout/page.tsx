@@ -35,10 +35,21 @@ function CheckoutContent() {
         paymentMethod: 'cod',
     });
 
-    // UPI Payment States - Simplified
+    // UPI Payment States - Production Ready
     const [upiAppUsed, setUpiAppUsed] = useState("");
-    const [upiUserId, setUpiUserId] = useState("");
+    const [upiUserName, setUpiUserName] = useState("");
+    const [upiMobile, setUpiMobile] = useState("");
     const [showUpiForm, setShowUpiForm] = useState(false);
+
+    // ENV Variables - No Hardcoding
+    const TFC_UPI_ID = process.env.NEXT_PUBLIC_TFC_UPI_ID;
+    const TFC_UPI_NAME = process.env.NEXT_PUBLIC_TFC_UPI_NAME;
+    const TFC_UPI_MOBILE = process.env.NEXT_PUBLIC_TFC_UPI_MOBILE;
+
+    // Mobile Detection
+    const isMobile = () => {
+        return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    };
 
     // Pincode auto-fill states
     const [availableAreas, setAvailableAreas] = useState<Array<{pincode: string; area: string; district: string; state: string}>>([]);
@@ -173,31 +184,36 @@ function CheckoutContent() {
         } else {
             setShowUpiForm(false);
             setUpiAppUsed("");
-            setUpiUserId("");
+            setUpiUserName("");
+            setUpiMobile("");
         }
     };
 
-    // UPI Deep Link Function
+    // UPI Deep Link Function - Production Ready
     const openUpiApp = (app: string) => {
-        const upiId = process.env.NEXT_PUBLIC_UPI_ID || "8508436152@ybl";
-        const name = "TFC Food Ordering";
-        const amount = finalTotal;
+        // Set app name for all devices
+        setUpiAppUsed(
+            app === "gpay" ? "Google Pay" :
+            app === "phonepe" ? "PhonePe" :
+            "Paytm"
+        );
         
+        // Only open UPI apps on mobile devices
+        if (!isMobile()) return;
+        
+        const amount = finalTotal;
         let url = "";
         
         if (app === "gpay") {
-            url = `tez://upi/pay?pa=${upiId}&pn=${name}&am=${amount}&cu=INR`;
-            setUpiAppUsed("Google Pay");
+            url = `tez://upi/pay?pa=${TFC_UPI_ID}&pn=${TFC_UPI_NAME}&am=${amount}&cu=INR`;
         }
         
         if (app === "phonepe") {
-            url = `phonepe://pay?pa=${upiId}&pn=${name}&am=${amount}&cu=INR`;
-            setUpiAppUsed("PhonePe");
+            url = `phonepe://pay?pa=${TFC_UPI_ID}&pn=${TFC_UPI_NAME}&am=${amount}&cu=INR`;
         }
         
         if (app === "paytm") {
-            url = `paytmmp://pay?pa=${upiId}&pn=${name}&am=${amount}&cu=INR`;
-            setUpiAppUsed("Paytm");
+            url = `paytmmp://pay?pa=${TFC_UPI_ID}&pn=${TFC_UPI_NAME}&am=${amount}&cu=INR`;
         }
         
         window.location.href = url;
@@ -220,10 +236,10 @@ function CheckoutContent() {
             }
         }
 
-        // UPI Payment Validation - Simplified
+        // UPI Payment Validation - Production Ready
         if (formData.paymentMethod === "upi") {
-            if (!upiAppUsed || !upiUserId) {
-                toast.error("Please select UPI app and enter your UPI ID");
+            if (!upiAppUsed || !upiUserName || upiMobile.length !== 10) {
+                toast.error("Enter UPI App, Name and 10-digit Mobile Number");
                 return;
             }
         }
@@ -259,7 +275,8 @@ function CheckoutContent() {
                 upiDetails: formData.paymentMethod === "upi" 
                     ? {
                         app: upiAppUsed,
-                        userUpiId: upiUserId
+                        name: upiUserName,
+                        mobile: upiMobile
                     }
                     : null,
             };
@@ -669,11 +686,43 @@ function CheckoutContent() {
                                         </div>
                                     </div>
 
-                                    {/* UPI Details Form - Simplified */}
+                                    {/* Desktop UPI Info */}
+                                    {!isMobile() && (
+                                        <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <h4 className="text-lg font-semibold mb-3 text-blue-800">UPI Payment Details</h4>
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm"><strong>UPI Name:</strong> {TFC_UPI_NAME}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => navigator.clipboard.writeText(TFC_UPI_NAME || "")}
+                                                        className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                                                    >
+                                                        Copy Name
+                                                    </button>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm"><strong>UPI Mobile:</strong> {TFC_UPI_MOBILE}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => navigator.clipboard.writeText(TFC_UPI_MOBILE || "")}
+                                                        className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                                                    >
+                                                        Copy Mobile
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <p className="text-xs text-blue-700 mt-3">
+                                                Open UPI app → Search mobile number → Pay → Fill your details below
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/* UPI Details Form - Production Ready */}
                                     <div className="space-y-4">
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                Payment App Used *
+                                                UPI App Used *
                                             </label>
                                             <input
                                                 type="text"
@@ -686,14 +735,28 @@ function CheckoutContent() {
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                Your UPI ID *
+                                                Your UPI Name *
                                             </label>
                                             <input
                                                 type="text"
-                                                value={upiUserId}
-                                                onChange={(e) => setUpiUserId(e.target.value)}
+                                                value={upiUserName}
+                                                onChange={(e) => setUpiUserName(e.target.value)}
                                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                placeholder="example@upi"
+                                                placeholder="Your full name as per UPI"
+                                                required={formData.paymentMethod === "upi"}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                Your UPI Mobile Number *
+                                            </label>
+                                            <input
+                                                type="tel"
+                                                maxLength={10}
+                                                value={upiMobile}
+                                                onChange={(e) => setUpiMobile(e.target.value.replace(/\D/g, ''))}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                placeholder="10-digit mobile number"
                                                 required={formData.paymentMethod === "upi"}
                                             />
                                         </div>
@@ -704,10 +767,21 @@ function CheckoutContent() {
                                             <strong>Instructions:</strong>
                                         </p>
                                         <ol className="text-sm text-yellow-700 mt-1 list-decimal list-inside space-y-1">
-                                            <li>Click on your preferred UPI app above</li>
-                                            <li>Complete the payment of ₹{finalTotal}</li>
-                                            <li>Enter your UPI ID below</li>
-                                            <li>Click "Place Order" to confirm</li>
+                                            {isMobile() ? (
+                                                <>
+                                                    <li>Click on your preferred UPI app above</li>
+                                                    <li>Complete the payment of ₹{finalTotal}</li>
+                                                    <li>Enter your name and mobile number below</li>
+                                                    <li>Click "Place Order" to confirm</li>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <li>Copy UPI name and mobile from above</li>
+                                                    <li>Open your UPI app and search by mobile number</li>
+                                                    <li>Pay ₹{finalTotal} to the merchant</li>
+                                                    <li>Enter your details below and place order</li>
+                                                </>
+                                            )}
                                         </ol>
                                     </div>
                                 </div>
