@@ -20,7 +20,7 @@ export default function Header() {
 
     // Real-time Firebase cart listener
     useEffect(() => {
-        if (!emailUser?.email) {
+        if (!emailUser?.email || !database) {
             setCartCount(0);
             return;
         }

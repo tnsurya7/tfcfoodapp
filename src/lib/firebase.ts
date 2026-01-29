@@ -1,6 +1,6 @@
-import { initializeApp, getApps } from "firebase/app";
-import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
-import { getDatabase } from "firebase/database";
+import { initializeApp, getApps, FirebaseApp } from "firebase/app";
+import { getAuth, setPersistence, browserLocalPersistence, Auth } from "firebase/auth";
+import { getDatabase, Database } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -12,10 +12,10 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-// Only initialize Firebase in the browser and when config is available
-let app;
-let auth;
-let database;
+// Initialize Firebase variables with proper types
+let app: FirebaseApp | undefined;
+let auth: Auth | undefined;
+let database: Database | undefined;
 
 if (typeof window !== 'undefined' && firebaseConfig.apiKey) {
   // Initialize Firebase only if not already initialized
