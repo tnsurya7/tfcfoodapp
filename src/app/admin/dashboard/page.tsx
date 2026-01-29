@@ -880,14 +880,20 @@ function AdminDashboardContent() {
                                                                         return paymentMethod;
                                                                     }
                                                                 })()}
-                                                                {order.paymentMethod === 'upi' && order.upiDetails && (
-                                                                    <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
-                                                                        <div className="space-y-1">
-                                                                            <div><strong>UPI App:</strong> {order.upiDetails.app}</div>
-                                                                            <div><strong>Customer Name:</strong> {order.upiDetails.name}</div>
-                                                                            <div><strong>Customer Mobile:</strong> {order.upiDetails.mobile}</div>
+                                                                {order.paymentMethod === 'upi' && (
+                                                                    order.upiDetails ? (
+                                                                        <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
+                                                                            <div className="space-y-1">
+                                                                                <div><strong>UPI App:</strong> {order.upiDetails.app}</div>
+                                                                                <div><strong>Customer Name:</strong> {order.upiDetails.name}</div>
+                                                                                <div><strong>Customer Mobile:</strong> {order.upiDetails.mobile}</div>
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
+                                                                    ) : (
+                                                                        <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded text-xs text-gray-600 dark:text-gray-400">
+                                                                            <em>UPI details not available (legacy order)</em>
+                                                                        </div>
+                                                                    )
                                                                 )}
                                                             </p>
                                                         </div>
