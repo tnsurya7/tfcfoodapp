@@ -13,6 +13,7 @@ import toast from "@/lib/toast";
 import Image from 'next/image';
 import ClientOnly from '@/components/ClientOnly';
 import { generateUserId } from '@/lib/firebaseHelpers';
+import pincodeData from '@/data/pincodeData.json';
 
 function CheckoutContent() {
     const router = useRouter();
@@ -27,6 +28,10 @@ function CheckoutContent() {
         name: emailUser?.name || '',
         phone: emailUser?.phone || '',
         address: '',
+        pincode: '',
+        area: '',
+        district: '',
+        state: '',
         paymentMethod: 'cod',
     });
 
@@ -34,6 +39,10 @@ function CheckoutContent() {
     const [upiApp, setUpiApp] = useState("");
     const [upiTxnId, setUpiTxnId] = useState("");
     const [showUpiForm, setShowUpiForm] = useState(false);
+
+    // Pincode auto-fill states
+    const [availableAreas, setAvailableAreas] = useState([]);
+    const [showAreaDropdown, setShowAreaDropdown] = useState(false);
 
     // Load user cart when component mounts
     useEffect(() => {
@@ -75,6 +84,78 @@ function CheckoutContent() {
             ...formData,
             [e.target.name]: e.target.value,
         });
+    };
+
+    const handlePincodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const pincode = e.target.value;
+        setFormData({
+            ...formData,
+            pincode: pincode,
+        });
+
+        // Auto-fill area, district, and state if pincode matches
+        if (pincode.length === 6) {
+            const matchedData = pincodeData.filter(item => item.pincode === pincode);
+            if (matchedData.length > 0) {
+                // Get unique areas for this pincode
+                const uniqueAreas = [...new Set(matchedData.map(item => item.area))];
+                
+                if (uniqueAreas.length === 1) {
+                    // Single area - auto-fill directly
+                    const data = matchedData[0];
+                    setFormData(prev => ({
+                        ...prev,
+                        pincode: pincode,
+                        area: data.area,
+                        district: data.district,
+                        state: data.state,
+                    }));
+                    setShowAreaDropdown(false);
+                    toast.success('Address details auto-filled!');
+                } else {
+                    // Multiple areas - show dropdown
+                    setAvailableAreas(matchedData);
+                    setShowAreaDropdown(true);
+                    setFormData(prev => ({
+                        ...prev,
+                        pincode: pincode,
+                        area: '',
+                        district: matchedData[0].district, // Same district for all areas
+                        state: matchedData[0].state, // Same state for all areas
+                    }));
+                    toast.success(`Found ${uniqueAreas.length} areas for this pincode. Please select one.`);
+                }
+            } else {
+                // Clear auto-filled fields if no match
+                setFormData(prev => ({
+                    ...prev,
+                    pincode: pincode,
+                    area: '',
+                    district: '',
+                    state: '',
+                }));
+                setAvailableAreas([]);
+                setShowAreaDropdown(false);
+            }
+        } else {
+            // Clear fields if pincode is incomplete
+            setAvailableAreas([]);
+            setShowAreaDropdown(false);
+        }
+    };
+
+    const handleAreaSelect = (selectedArea: string) => {
+        const selectedData = availableAreas.find(item => item.area === selectedArea);
+        if (selectedData) {
+            setFormData(prev => ({
+                ...prev,
+                area: selectedData.area,
+                district: selectedData.district,
+                state: selectedData.state,
+            }));
+            setShowAreaDropdown(false);
+            toast.success('Area selected successfully!');
+        }
     };
 
     const handlePaymentMethodChange = (method: string) => {
@@ -125,8 +206,8 @@ function CheckoutContent() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!formData.name || !formData.phone || !formData.address) {
-            toast.error('Please fill in all fields');
+        if (!formData.name || !formData.phone || !formData.address || !formData.pincode || !formData.area || !formData.district || !formData.state) {
+            toast.error('Please fill in all address fields');
             return;
         }
 
@@ -147,7 +228,14 @@ function CheckoutContent() {
                 customer: formData.name,
                 phone: formData.phone,
                 email: emailUser.email,
-                address: formData.address,
+                address: `${formData.address}, ${formData.area}, ${formData.district}, ${formData.state} - ${formData.pincode}`,
+                addressDetails: {
+                    address: formData.address,
+                    area: formData.area,
+                    district: formData.district,
+                    state: formData.state,
+                    pincode: formData.pincode
+                },
                 items: items.map(item => ({
                     id: item.id,
                     name: item.name,
@@ -284,9 +372,98 @@ function CheckoutContent() {
                                         required
                                     />
                                 </div>
+                                
+                                {/* Pincode Field */}
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Delivery Address *
+                                        Pincode *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="pincode"
+                                        value={formData.pincode}
+                                        onChange={handlePincodeChange}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                        placeholder="Enter 6-digit pincode"
+                                        maxLength={6}
+                                        required
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Enter pincode to auto-fill area, district, and state
+                                    </p>
+                                </div>
+
+                                {/* Auto-filled Address Fields */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            Area *
+                                        </label>
+                                        {showAreaDropdown ? (
+                                            <div className="relative">
+                                                <select
+                                                    value={formData.area}
+                                                    onChange={(e) => handleAreaSelect(e.target.value)}
+                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white"
+                                                    required
+                                                >
+                                                    <option value="">Select Area</option>
+                                                    {[...new Set(availableAreas.map(item => item.area))].map((area, index) => (
+                                                        <option key={index} value={area}>
+                                                            {area}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <p className="text-xs text-green-600 mt-1">
+                                                    Multiple areas found for this pincode. Please select one.
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <input
+                                                type="text"
+                                                name="area"
+                                                value={formData.area}
+                                                onChange={handleInputChange}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-gray-50"
+                                                placeholder="Area will be auto-filled"
+                                                required
+                                            />
+                                        )}
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            District *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="district"
+                                            value={formData.district}
+                                            onChange={handleInputChange}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-gray-50"
+                                            placeholder="District will be auto-filled"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        State *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="state"
+                                        value={formData.state}
+                                        onChange={handleInputChange}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-gray-50"
+                                        placeholder="State will be auto-filled"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Street Address *
                                     </label>
                                     <textarea
                                         name="address"
@@ -294,7 +471,7 @@ function CheckoutContent() {
                                         onChange={handleInputChange}
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                                         rows={3}
-                                        placeholder="123 Main St, Apt 4B, City, State, PIN"
+                                        placeholder="House/Flat No., Street Name, Landmark"
                                         required
                                     />
                                 </div>
