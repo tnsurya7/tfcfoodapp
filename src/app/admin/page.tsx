@@ -4,39 +4,48 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Lock, User, Eye, EyeOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import toast from '@/lib/toast';
 
 export default function AdminPage() {
     const router = useRouter();
+    const { login, currentAdmin, loading } = useAdminAuth();
     const [credentials, setCredentials] = useState({ username: '', password: '' });
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
-        // Check if already logged in
-        const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
-        if (isLoggedIn === 'true') {
+        // Redirect if already logged in
+        if (!loading && currentAdmin) {
             router.push('/admin/dashboard');
         }
-    }, [router]);
+    }, [currentAdmin, loading, router]);
+
+    // Show loading while checking auth state
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-primary via-primary-dark to-red-900 flex items-center justify-center py-20 px-4">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+                    <p className="text-white">Loading...</p>
+                </div>
+            </div>
+        );
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
 
-        // Simulate login delay
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        // Simple authentication (in production, use proper backend authentication)
-        if (credentials.username === process.env.NEXT_PUBLIC_ADMIN_USERNAME && credentials.password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
-            sessionStorage.setItem('adminLoggedIn', 'true');
+        try {
+            await login(credentials.username, credentials.password);
             toast.success('Login successful!');
             router.push('/admin/dashboard');
-        } else {
+        } catch (error) {
             toast.error('Invalid credentials');
+        } finally {
+            setIsLoading(false);
         }
-
-        setIsLoading(false);
     };
 
     return (

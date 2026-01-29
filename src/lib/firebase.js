@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 
 const firebaseConfig = {
@@ -26,6 +26,12 @@ if (typeof window !== 'undefined' && firebaseConfig.apiKey) {
   }
   
   auth = getAuth(app);
+  
+  // Enable persistent authentication - keeps user logged in across sessions
+  setPersistence(auth, browserLocalPersistence).catch((error) => {
+    console.error("Failed to set auth persistence:", error);
+  });
+  
   database = getDatabase(app);
 }
 

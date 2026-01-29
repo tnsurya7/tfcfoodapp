@@ -12,22 +12,20 @@ import {
     DollarSign,
     ShoppingBag,
     TrendingUp,
-    Eye,
 } from 'lucide-react';
 import Link from 'next/link';
 import toast from "@/lib/toast";
 import Image from 'next/image';
 import { FoodItem } from '@/store/cartStore';
 import FoodForm from '@/components/admin/FoodForm';
+import AdminProtectedRoute from '@/components/auth/AdminProtectedRoute';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { 
-    getAllFoods, 
-    deleteFood as deleteFirebaseFood,
     getAllOrders,
     updateOrderStatusWithTimestamp,
     deleteOrder as deleteFirebaseOrder,
-    listenToFoods,
     listenToOrders,
     listenToUsers,
     getDatabaseStats,
@@ -37,16 +35,16 @@ import {
 import { useFirebaseFoodStore } from '@/store/firebaseFoodStore';
 import { seedTFCFoodsOnce } from '@/lib/seedFoods';
 
-export default function AdminDashboard() {
+function AdminDashboardContent() {
     const router = useRouter();
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const { logout } = useAdminAuth();
     const [activeTab, setActiveTab] = useState<'foods' | 'orders' | 'customers'>('foods');
     const [showFoodForm, setShowFoodForm] = useState(false);
     const [editingFood, setEditingFood] = useState<FoodItem | null>(null);
     const [loading, setLoading] = useState(true);
     
     // Firebase data states
-    const { foods, listenFoods, addFood: addFoodToFirebase, updateFood: updateFoodInFirebase, deleteFood: deleteFoodFromFirebase } = useFirebaseFoodStore();
+    const { foods, listenFoods, deleteFood } = useFirebaseFoodStore();
     const [orders, setOrders] = useState<any[]>([]);
     const [users, setUsers] = useState<any[]>([]);
     const [stats, setStats] = useState({
@@ -81,14 +79,9 @@ export default function AdminDashboard() {
     }, [foods, orders]); // Re-run when foods or orders change
 
     useEffect(() => {
-        const loggedIn = sessionStorage.getItem('adminLoggedIn');
-        if (loggedIn !== 'true') {
-            router.push('/admin');
-        } else {
-            setIsLoggedIn(true);
-            loadData();
-        }
-    }, [router]);
+        // Load initial data
+        loadData();
+    }, []);
 
     useEffect(() => {
         seedTFCFoodsOnce();
@@ -163,10 +156,14 @@ export default function AdminDashboard() {
         }
     };
 
-    const handleLogout = () => {
-        sessionStorage.removeItem('adminLoggedIn');
-        toast.success('Logged out successfully');
-        router.push('/admin');
+    const handleLogout = async () => {
+        try {
+            await logout();
+            toast.success('Logged out successfully');
+            router.push('/admin');
+        } catch (error) {
+            toast.error('Error logging out');
+        }
     };
 
     const handleDeleteFood = async (id: string, name: string) => {
@@ -177,7 +174,7 @@ export default function AdminDashboard() {
                     label: 'Delete',
                     onClick: async () => {
                         try {
-                            await deleteFoodFromFirebase(id);
+                            await deleteFood(id);
                             toast.success('Food item deleted successfully');
                             // UI will update automatically via Firebase listener
                         } catch (error) {
@@ -263,17 +260,6 @@ export default function AdminDashboard() {
             return `${Math.floor(diffInMinutes / 1440)} days ago`;
         }
     };
-
-    if (!isLoggedIn) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Loading...</p>
-                </div>
-            </div>
-        );
-    }
 
     if (loading) {
         return (
@@ -1065,5 +1051,13 @@ export default function AdminDashboard() {
                 )}
             </AnimatePresence>
         </div>
+    );
+}
+
+export default function AdminDashboard() {
+    return (
+        <AdminProtectedRoute>
+            <AdminDashboardContent />
+        </AdminProtectedRoute>
     );
 }

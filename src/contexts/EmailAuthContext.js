@@ -1,7 +1,9 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect } from 'react';
-import { getUser, saveUser } from '@/lib/firebaseHelpers';
+import { onAuthStateChanged, signInAnonymously, signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { getUser, saveUser, updateUserLastLogin } from '@/lib/firebaseHelpers';
 
 const EmailAuthContext = createContext();
 
@@ -16,42 +18,64 @@ export const useEmailAuth = () => {
 export const EmailAuthProvider = ({ children }) => {
     const [currentUser, setCurrentUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [firebaseUser, setFirebaseUser] = useState(null);
 
     useEffect(() => {
-        // Check if user is logged in on component mount
-        checkAuthState();
-    }, []);
-
-    const checkAuthState = async () => {
-        try {
-            // Check sessionStorage for current session only
-            const userEmail = sessionStorage.getItem('tfc_user_email');
-            if (userEmail) {
-                // Fetch user data from Firebase
-                const result = await getUser(userEmail);
-                if (result.success) {
-                    setCurrentUser(result.user);
-                } else {
-                    // User not found in Firebase, clear session
-                    sessionStorage.removeItem('tfc_user_email');
-                }
-            }
-        } catch (error) {
-            console.error('Error checking auth state:', error);
-            sessionStorage.removeItem('tfc_user_email');
-        } finally {
+        if (!auth) {
             setLoading(false);
+            return;
         }
-    };
+
+        // Listen to Firebase auth state changes
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            setFirebaseUser(user);
+            
+            if (user) {
+                // User is signed in, check if we have their profile data
+                const userEmail = localStorage.getItem('tfc_user_email');
+                if (userEmail) {
+                    try {
+                        const result = await getUser(userEmail);
+                        if (result.success) {
+                            setCurrentUser(result.user);
+                            // Update last login
+                            await updateUserLastLogin(userEmail);
+                        } else {
+                            // User data not found, clear storage
+                            localStorage.removeItem('tfc_user_email');
+                            setCurrentUser(null);
+                        }
+                    } catch (error) {
+                        console.error('Error fetching user data:', error);
+                        localStorage.removeItem('tfc_user_email');
+                        setCurrentUser(null);
+                    }
+                }
+            } else {
+                // User is signed out
+                setCurrentUser(null);
+                localStorage.removeItem('tfc_user_email');
+            }
+            
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, []);
 
     const login = async (userData) => {
         try {
-            // Save user to Firebase
+            // First, sign in anonymously to Firebase Auth for session persistence
+            if (!firebaseUser) {
+                await signInAnonymously(auth);
+            }
+            
+            // Save user to Firebase Realtime Database
             const result = await saveUser(userData);
             if (result.success) {
                 setCurrentUser(result.user);
-                // Store only email in sessionStorage for current session
-                sessionStorage.setItem('tfc_user_email', userData.email);
+                // Store email in localStorage for persistent login
+                localStorage.setItem('tfc_user_email', userData.email);
             }
         } catch (error) {
             console.error('Error logging in user:', error);
@@ -59,9 +83,18 @@ export const EmailAuthProvider = ({ children }) => {
         }
     };
 
-    const logout = () => {
-        setCurrentUser(null);
-        sessionStorage.removeItem('tfc_user_email');
+    const logout = async () => {
+        try {
+            setCurrentUser(null);
+            localStorage.removeItem('tfc_user_email');
+            
+            // Sign out from Firebase Auth
+            if (firebaseUser) {
+                await signOut(auth);
+            }
+        } catch (error) {
+            console.error('Error logging out:', error);
+        }
     };
 
     const isAuthenticated = () => {
@@ -74,7 +107,7 @@ export const EmailAuthProvider = ({ children }) => {
         login,
         logout,
         isAuthenticated,
-        checkAuthState
+        firebaseUser
     };
 
     return (

@@ -5,6 +5,7 @@ import { Toaster } from "react-hot-toast";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { EmailAuthProvider } from "@/contexts/EmailAuthContext";
+import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -34,11 +35,13 @@ export default function RootLayout({
         <html lang="en">
             <body className={inter.className}>
                 <EmailAuthProvider>
-                    <Header />
-                    <main className="min-h-screen">
-                        {children}
-                    </main>
-                    <Footer />
+                    <AdminAuthProvider>
+                        <Header />
+                        <main className="min-h-screen">
+                            {children}
+                        </main>
+                        <Footer />
+                    </AdminAuthProvider>
                     <Toaster
                         position="top-right"
                         toastOptions={{
