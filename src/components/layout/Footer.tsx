@@ -38,6 +38,13 @@ export default function Footer() {
                                 <Instagram className="w-5 h-5" />
                             </a>
                             <a 
+                                href="mailto:tfcfoodapp@gmail.com" 
+                                className="hover:text-primary transition-colors"
+                                aria-label="Email"
+                            >
+                                <Mail className="w-5 h-5" />
+                            </a>
+                            <a 
                                 href="https://wa.me/916379151006" 
                                 target="_blank"
                                 rel="noopener noreferrer"
@@ -134,6 +141,15 @@ export default function Footer() {
                                     <div>+91 6379151006</div>
                                     <div>+91 9566376453</div>
                                 </div>
+                            </li>
+                            <li className="flex items-center space-x-2">
+                                <Mail className="w-5 h-5 text-primary flex-shrink-0" />
+                                <a 
+                                    href="mailto:tfcfoodapp@gmail.com"
+                                    className="hover:text-primary transition-colors"
+                                >
+                                    tfcfoodapp@gmail.com
+                                </a>
                             </li>
                             <li className="text-xs">
                                 <div className="font-semibold text-white mb-1">Business Hours:</div>

@@ -302,7 +302,10 @@ function AdminDashboardContent() {
             doc.setFontSize(16);
             doc.text('Recent Orders', 20, currentY);
             
-                const orderData = orders.slice(0, 8).map(order => {
+                const orderData = orders
+                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                    .slice(0, 8)
+                    .map(order => {
                 // Build items breakdown
                 const itemsBreakdown = order.items?.map((item: any) => 
                     `${item.name} x${item.qty || item.quantity || 1} = Rs.${((item.price || 0) * (item.qty || item.quantity || 1)).toFixed(0)}`
@@ -814,7 +817,9 @@ function AdminDashboardContent() {
                                 <h2 className="text-xl sm:text-2xl font-bold mb-6 dark:text-white">Orders Management</h2>
 
                                 <div className="space-y-4">
-                                    {orders.map((order) => (
+                                    {orders
+                                        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                                        .map((order) => (
                                         <div
                                             key={order.id}
                                             className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 sm:p-6 hover:shadow-md transition-shadow"
