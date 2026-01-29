@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, CreditCard, Smartphone, Banknote, Check } from 'lucide-react';
+import { ArrowLeft, Smartphone, Banknote, Check } from 'lucide-react';
 import Link from 'next/link';
 import { useFirebaseCartStore } from '@/store/firebaseCartStore';
 import { useFirebaseOrderStore } from '@/store/firebaseOrderStore';
@@ -344,34 +344,10 @@ function CheckoutContent() {
                                         <div className="flex-1">
                                             <h3 className="font-bold">UPI Payment</h3>
                                             <p className="text-sm text-gray-600">
-                                                Pay via UPI QR code
+                                                Pay via UPI apps
                                             </p>
                                         </div>
                                         {formData.paymentMethod === 'upi' && (
-                                            <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
-                                                <Check className="w-4 h-4 text-white" />
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Razorpay */}
-                                <div
-                                    onClick={() => handlePaymentMethodChange('razorpay')}
-                                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${formData.paymentMethod === 'razorpay'
-                                            ? 'border-red-500 bg-red-50'
-                                            : 'border-gray-200 hover:border-red-300'
-                                        }`}
-                                >
-                                    <div className="flex items-center space-x-3">
-                                        <CreditCard className="w-6 h-6 text-red-500" />
-                                        <div className="flex-1">
-                                            <h3 className="font-bold">Card Payment</h3>
-                                            <p className="text-sm text-gray-600">
-                                                Pay securely with Razorpay
-                                            </p>
-                                        </div>
-                                        {formData.paymentMethod === 'razorpay' && (
                                             <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
                                                 <Check className="w-4 h-4 text-white" />
                                             </div>
