@@ -89,6 +89,7 @@ export default function FoodForm({ food, onClose, onSave }: FoodFormProps) {
         { value: 'rice', label: 'Rice' },
         { value: 'noodles', label: 'Noodles' },
         { value: 'chilli', label: 'Chilli' },
+        { value: 'gravy', label: 'Gravy' },
         { value: 'desserts', label: 'Desserts' },
         { value: 'drinks', label: 'Drinks' },
     ];

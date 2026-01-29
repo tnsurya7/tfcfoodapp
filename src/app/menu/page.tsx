@@ -16,6 +16,7 @@ const categories = [
     { id: 'rice', name: 'Rice' },
     { id: 'noodles', name: 'Noodles' },
     { id: 'chilli', name: 'Chilli' },
+    { id: 'gravy', name: 'Gravy' },
     { id: 'desserts', name: 'Desserts' },
     { id: 'drinks', name: 'Drinks' },
 ];

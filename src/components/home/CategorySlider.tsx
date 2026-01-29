@@ -11,6 +11,7 @@ const categories = [
     { id: 'veg', name: 'Vegetarian', emoji: '🥗', color: 'from-green-400 to-emerald-500' },
     { id: 'fried-rice', name: 'Fried Rice', emoji: '🍚', color: 'from-amber-400 to-orange-500' },
     { id: 'noodles', name: 'Noodles', emoji: '🍜', color: 'from-yellow-500 to-red-500' },
+    { id: 'gravy', name: 'Gravy', emoji: '🍛', color: 'from-red-500 to-orange-600' },
     { id: 'drinks', name: 'Drinks', emoji: '🥤', color: 'from-blue-400 to-cyan-500' },
     { id: 'desserts', name: 'Desserts', emoji: '🍰', color: 'from-pink-400 to-purple-500' },
 ];
