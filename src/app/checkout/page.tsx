@@ -99,12 +99,26 @@ function CheckoutContent() {
     
     const openUPI = (app: string) => {
         const amount = finalTotal;
-        const url = `upi://pay?pa=${MERCHANT_UPI}&pn=${MERCHANT_NAME}&am=${amount}&cu=INR&tn=Food Order Payment`;
+        const upiId = process.env.NEXT_PUBLIC_UPI_ID || "";
+        const name = "TFC FOOD";
+        const note = "TFC Order Payment";
+        
+        let url = "";
+        
+        if (app === "gpay") {
+            url = `upi://pay?pa=${upiId}&pn=${name}&am=${amount}&cu=INR&tn=${note}`;
+        }
+        if (app === "phonepe") {
+            url = `phonepe://pay?pa=${upiId}&pn=${name}&am=${amount}&cu=INR&tn=${note}`;
+        }
+        if (app === "paytm") {
+            url = `paytmmp://pay?pa=${upiId}&pn=${name}&am=${amount}&cu=INR&tn=${note}`;
+        }
         
         // Set the app name for tracking
         setUpiApp(app === 'gpay' ? 'Google Pay' : app === 'phonepe' ? 'PhonePe' : 'Paytm');
         
-        // Open UPI app
+        // Open UPI app with specific deep link
         window.location.href = url;
     };
 
