@@ -318,7 +318,9 @@ function AdminDashboardContent() {
                     order.id.substring(0, 12) + '...',
                     order.customer,
                     order.phone,
-                    order.orderType === 'pickup' ? 'Pickup' : 'Delivery',
+                    order.orderType === 'pickup' ? 'Pickup' : 
+                    order.orderType === 'delivery' ? 'Delivery' : 
+                    (order.address && order.address.includes('Store Pickup')) ? 'Pickup' : 'Delivery',
                     itemsBreakdown,
                     paymentInfo,
                     order.address?.substring(0, 25) + '...' || 'N/A',
@@ -850,15 +852,29 @@ function AdminDashboardContent() {
                                                             <p className="text-gray-600 dark:text-gray-400 text-sm">
                                                                 <strong>Order Type:</strong> 
                                                                 <span className={`ml-1 px-2 py-1 rounded-full text-xs font-semibold ${
-                                                                    order.orderType === 'pickup' 
+                                                                    (order.orderType === 'pickup' || (order.address && order.address.includes('Store Pickup')))
                                                                         ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
                                                                         : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
                                                                 }`}>
-                                                                    {order.orderType === 'pickup' ? 'Store Pickup' : 'Home Delivery'}
+                                                                    {order.orderType === 'pickup' ? 'Store Pickup' : 
+                                                                     order.orderType === 'delivery' ? 'Home Delivery' : 
+                                                                     (order.address && order.address.includes('Store Pickup')) ? 'Store Pickup' : 'Home Delivery'}
                                                                 </span>
                                                             </p>
                                                             <p className="text-gray-600 dark:text-gray-400 text-sm">
-                                                                <strong>Payment:</strong> {order.paymentMethod?.toUpperCase() || 'COD'}
+                                                                <strong>Payment:</strong> 
+                                                                {(() => {
+                                                                    const isPickup = order.orderType === 'pickup' || (order.address && order.address.includes('Store Pickup'));
+                                                                    const paymentMethod = order.paymentMethod?.toUpperCase() || 'COD';
+                                                                    
+                                                                    if (paymentMethod === 'COD') {
+                                                                        return isPickup ? 'PAY AT STORE (CASH)' : 'CASH ON DELIVERY';
+                                                                    } else if (paymentMethod === 'UPI') {
+                                                                        return 'UPI ONLINE PAY';
+                                                                    } else {
+                                                                        return paymentMethod;
+                                                                    }
+                                                                })()}
                                                                 {order.paymentMethod === 'upi' && order.upiDetails && (
                                                                     <span className="block text-xs text-blue-600 mt-1">
                                                                         App: {order.upiDetails.app} | Txn: {order.upiDetails.transactionId}
