@@ -314,7 +314,12 @@ function AdminDashboardContent() {
                 // Build payment info
                 let paymentInfo = order.paymentMethod?.toUpperCase() || 'COD';
                 if (order.paymentMethod === 'upi' && order.upiDetails) {
-                    paymentInfo += ` (${order.upiDetails.app}: ${order.upiDetails.transactionId})`;
+                    paymentInfo += ` (${order.upiDetails.app}`;
+                    if (order.upiDetails.name) paymentInfo += ` - ${order.upiDetails.name}`;
+                    if (order.upiDetails.mobile) paymentInfo += ` - ${order.upiDetails.mobile}`;
+                    if (order.upiDetails.userUpiId) paymentInfo += ` - ${order.upiDetails.userUpiId}`;
+                    if (order.upiDetails.transactionId) paymentInfo += ` - ${order.upiDetails.transactionId}`;
+                    paymentInfo += ')';
                 }
                 
                 return [
@@ -881,13 +886,23 @@ function AdminDashboardContent() {
                                                                     }
                                                                 })()}
                                                                 {order.paymentMethod === 'upi' && order.upiDetails && (
-                                                                    <span className="block text-xs text-blue-600 mt-1">
-                                                                        App: {order.upiDetails.app} | 
-                                                                        {order.upiDetails.name && ` Name: ${order.upiDetails.name} |`}
-                                                                        {order.upiDetails.mobile && ` Mobile: ${order.upiDetails.mobile}`}
-                                                                        {order.upiDetails.userUpiId && ` UPI ID: ${order.upiDetails.userUpiId}`}
-                                                                        {order.upiDetails.transactionId && ` Txn: ${order.upiDetails.transactionId}`}
-                                                                    </span>
+                                                                    <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
+                                                                        <div className="space-y-1">
+                                                                            <div><strong>UPI App:</strong> {order.upiDetails.app}</div>
+                                                                            {order.upiDetails.name && (
+                                                                                <div><strong>Customer Name:</strong> {order.upiDetails.name}</div>
+                                                                            )}
+                                                                            {order.upiDetails.mobile && (
+                                                                                <div><strong>Customer Mobile:</strong> {order.upiDetails.mobile}</div>
+                                                                            )}
+                                                                            {order.upiDetails.userUpiId && (
+                                                                                <div><strong>UPI ID:</strong> {order.upiDetails.userUpiId}</div>
+                                                                            )}
+                                                                            {order.upiDetails.transactionId && (
+                                                                                <div><strong>Transaction ID:</strong> {order.upiDetails.transactionId}</div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
                                                                 )}
                                                             </p>
                                                         </div>
