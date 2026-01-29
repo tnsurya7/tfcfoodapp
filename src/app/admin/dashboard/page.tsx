@@ -885,8 +885,8 @@ function AdminDashboardContent() {
                                                                         <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
                                                                             <div className="space-y-1">
                                                                                 <div><strong>UPI App:</strong> {order.upiDetails.app}</div>
-                                                                                <div><strong>Customer Name:</strong> {order.upiDetails.name}</div>
-                                                                                <div><strong>Customer Mobile:</strong> {order.upiDetails.mobile}</div>
+                                                                                <div><strong>Customer UPI Name:</strong> {order.upiDetails.name}</div>
+                                                                                <div><strong>Customer UPI Mobile:</strong> {order.upiDetails.mobile}</div>
                                                                             </div>
                                                                         </div>
                                                                     ) : (
