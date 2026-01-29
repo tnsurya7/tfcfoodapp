@@ -885,23 +885,33 @@ function AdminDashboardContent() {
                                                                         return paymentMethod;
                                                                     }
                                                                 })()}
-                                                                {order.paymentMethod === 'upi' && order.upiDetails && (
+                                                                {order.paymentMethod === 'upi' && (
                                                                     <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
-                                                                        <div className="space-y-1">
-                                                                            <div><strong>UPI App:</strong> {order.upiDetails.app}</div>
-                                                                            {order.upiDetails.name && (
-                                                                                <div><strong>Customer Name:</strong> {order.upiDetails.name}</div>
-                                                                            )}
-                                                                            {order.upiDetails.mobile && (
-                                                                                <div><strong>Customer Mobile:</strong> {order.upiDetails.mobile}</div>
-                                                                            )}
-                                                                            {order.upiDetails.userUpiId && (
-                                                                                <div><strong>UPI ID:</strong> {order.upiDetails.userUpiId}</div>
-                                                                            )}
-                                                                            {order.upiDetails.transactionId && (
-                                                                                <div><strong>Transaction ID:</strong> {order.upiDetails.transactionId}</div>
-                                                                            )}
-                                                                        </div>
+                                                                        {order.upiDetails ? (
+                                                                            <div className="space-y-1">
+                                                                                <div><strong>UPI App:</strong> {order.upiDetails.app}</div>
+                                                                                {order.upiDetails.name && (
+                                                                                    <div><strong>Customer Name:</strong> {order.upiDetails.name}</div>
+                                                                                )}
+                                                                                {order.upiDetails.mobile && (
+                                                                                    <div><strong>Customer Mobile:</strong> {order.upiDetails.mobile}</div>
+                                                                                )}
+                                                                                {order.upiDetails.userUpiId && (
+                                                                                    <div><strong>UPI ID:</strong> {order.upiDetails.userUpiId}</div>
+                                                                                )}
+                                                                                {order.upiDetails.transactionId && (
+                                                                                    <div><strong>Transaction ID:</strong> {order.upiDetails.transactionId}</div>
+                                                                                )}
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div className="text-red-600">
+                                                                                <strong>⚠️ UPI Details Missing</strong>
+                                                                                <div className="text-xs mt-1">
+                                                                                    Order placed with UPI but details not saved properly.
+                                                                                    Check if Vercel ENV variables are updated.
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
                                                                     </div>
                                                                 )}
                                                             </p>
