@@ -45,7 +45,13 @@ const defaultFoods = [
     { name:"Mojito Mint", price:49, category:"drinks", description:"Mint mojito", type:"veg", image:"https://images.unsplash.com/photo-1551538827-9c037cb4f32a?w=400&h=300&fit=crop", popular:true, special:false },
     { name:"Mojito Apple", price:59, category:"drinks", description:"Apple mojito", type:"veg", image:"https://images.unsplash.com/photo-1544145945-f90425340c7e?w=400&h=300&fit=crop", popular:false, special:false },
     { name:"Mojito Blueberry", price:59, category:"drinks", description:"Blueberry mojito", type:"veg", image:"https://images.unsplash.com/photo-1546173159-315724a31696?w=400&h=300&fit=crop", popular:false, special:false },
-    { name:"Mojito Strawberry", price:59, category:"drinks", description:"Strawberry mojito", type:"veg", image:"https://images.unsplash.com/photo-1544145945-f90425340c7e?w=400&h=300&fit=crop", popular:false, special:false }
+    { name:"Mojito Strawberry", price:59, category:"drinks", description:"Strawberry mojito", type:"veg", image:"https://images.unsplash.com/photo-1544145945-f90425340c7e?w=400&h=300&fit=crop", popular:false, special:false },
+
+    /* ---------------- GRAVY ---------------- */
+    { name:"Chicken Pepper", price:129, category:"gravy", description:"Spicy chicken pepper gravy", type:"non-veg", image:"https://i.ytimg.com/vi/UtVDwLyQz08/maxresdefault.jpg", popular:false, special:false },
+    { name:"Chicken Manchurian", price:129, category:"gravy", description:"Classic chicken manchurian gravy", type:"non-veg", image:"https://i.ytimg.com/vi/UtVDwLyQz08/maxresdefault.jpg", popular:true, special:false },
+    { name:"Chicken Pallipalayam (Pre Order)", price:249, category:"gravy", description:"Traditional Pallipalayam chicken - Pre Order", type:"non-veg", image:"https://i.ytimg.com/vi/UtVDwLyQz08/maxresdefault.jpg", popular:true, special:true },
+    { name:"Chicken Varamilagai Kari (Pre Order)", price:249, category:"gravy", description:"Spicy varamilagai chicken - Pre Order", type:"non-veg", image:"https://i.ytimg.com/vi/UtVDwLyQz08/maxresdefault.jpg", popular:false, special:true }
 ];
 
 // ✅ SAFE SEEDER - ONLY RUNS IF DATABASE IS EMPTY
