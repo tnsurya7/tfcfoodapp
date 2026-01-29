@@ -4,7 +4,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ShoppingCart, Menu, X, Search, LogOut, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { useFirebaseCartStore } from '@/store/firebaseCartStore';
+import { ref, onValue } from 'firebase/database';
+import { database } from '@/lib/firebase';
 import { useEmailAuth } from '@/contexts/EmailAuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { generateUserId } from '@/lib/firebaseHelpers';
@@ -14,36 +15,34 @@ export default function Header() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const [mounted, setMounted] = useState(false);
-    const { items, fetchCart, setUserId, startListening, stopListening } = useFirebaseCartStore();
+    const [cartCount, setCartCount] = useState(0);
     const { currentUser: emailUser, logout: emailLogout } = useEmailAuth();
 
-    // Load user cart when user changes
+    // Real-time Firebase cart listener
     useEffect(() => {
-        const loadCart = async () => {
-            if (emailUser?.email) {
-                setUserId(emailUser.email);
-                await fetchCart();
-                
-                // Start real-time listener for instant cart updates
-                const unsubscribe = startListening();
-                return unsubscribe;
-            }
-        };
-        
-        const cleanup = loadCart();
-        
-        // Cleanup function
-        return () => {
-            if (cleanup && typeof cleanup.then === 'function') {
-                cleanup.then(unsubscribe => {
-                    if (unsubscribe) unsubscribe();
-                });
-            }
-            stopListening();
-        };
-    }, [emailUser, fetchCart, setUserId, startListening, stopListening]);
+        if (!emailUser?.email) {
+            setCartCount(0);
+            return;
+        }
 
-    const totalItems = items.reduce((sum, item) => sum + item.qty, 0);
+        const userId = generateUserId(emailUser.email);
+        const cartRef = ref(database, `tfc/carts/${userId}`);
+
+        const unsubscribe = onValue(cartRef, (snapshot) => {
+            if (!snapshot.exists()) {
+                setCartCount(0);
+            } else {
+                const items = Object.values(snapshot.val());
+                const totalQty = items.reduce(
+                    (sum: number, item: any) => sum + (item.quantity || item.qty || 1),
+                    0
+                );
+                setCartCount(totalQty);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [emailUser]);
 
     const handleLogout = async () => {
         try {
@@ -125,11 +124,11 @@ export default function Header() {
                             className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
                         >
                             <ShoppingCart className="w-6 h-6 text-gray-700" />
-                            {mounted && totalItems > 0 && (
+                            {mounted && cartCount > 0 && (
                                 <span
                                     className="absolute -top-1 -right-1 bg-primary text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-scale-in"
                                 >
-                                    {totalItems}
+                                    {cartCount}
                                 </span>
                             )}
                         </Link>
