@@ -1,9 +1,17 @@
 import emailjs from "@emailjs/browser";
 
 export const sendOrderEmail = async (order) => {
+  console.log('🔥 sendOrderEmail function called!');
+  console.log('📧 Order data received:', order);
+  
   const SERVICE_ID = process.env.NEXT_PUBLIC_ORDER_EMAILJS_SERVICE_ID;
   const TEMPLATE_ID = process.env.NEXT_PUBLIC_ORDER_EMAILJS_TEMPLATE_ID;
   const PUBLIC_KEY = process.env.NEXT_PUBLIC_ORDER_EMAILJS_PUBLIC_KEY;
+
+  console.log('🔧 Environment variables check:');
+  console.log('SERVICE_ID:', SERVICE_ID);
+  console.log('TEMPLATE_ID:', TEMPLATE_ID);
+  console.log('PUBLIC_KEY:', PUBLIC_KEY ? 'Present' : 'Missing');
 
   if (!SERVICE_ID || !TEMPLATE_ID || !PUBLIC_KEY) {
     console.error("❌ Missing EmailJS environment variables");

@@ -303,6 +303,9 @@ function CheckoutContent() {
             if (result.success) {
                 // 🔥 FORCE ORDER EMAIL TO SEND
                 console.log('🚀 Order placed successfully, sending email...');
+                console.log('🔧 Order result:', result);
+                console.log('📧 About to call sendOrderEmail...');
+                
                 try {
                     console.log('📧 Calling sendOrderEmail with data:', {
                         customer: orderData.customer,
@@ -318,6 +321,7 @@ function CheckoutContent() {
                     // Still show success to user since order was placed
                 }
             } else {
+                console.log('❌ Order creation failed, result:', result);
                 // If order fails, revert the optimistic update
                 setOrderPlaced(false);
                 toast.error('Failed to place order. Please try again.');
