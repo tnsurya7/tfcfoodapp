@@ -1,5 +1,8 @@
 import emailjs from "@emailjs/browser";
 
+// Initialize EmailJS
+emailjs.init(process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY);
+
 export const sendOrderEmail = async (order) => {
     // Ensure we have the correct template ID
     const templateId = process.env.NEXT_PUBLIC_EMAILJS_ORDER_TEMPLATE_ID;
@@ -59,14 +62,22 @@ export const sendOrderEmail = async (order) => {
     </div>
     `;
 
-    await emailjs.send(
-        serviceId,
-        templateId,
-        {
-            message_html: html
-        },
-        publicKey
-    );
-    
-    console.log('✅ Order email sent successfully with template:', templateId);
+    try {
+        const response = await emailjs.send(
+            serviceId,
+            templateId,
+            {
+                message_html: html
+            }
+        );
+        
+        console.log('✅ Order email sent successfully with template:', templateId);
+        console.log('📧 EmailJS Response:', response);
+        return response;
+    } catch (error) {
+        console.error('❌ EmailJS Error Details:', error);
+        console.error('❌ Error Status:', error.status);
+        console.error('❌ Error Text:', error.text);
+        throw error;
+    }
 };
