@@ -11,88 +11,68 @@ export const sendOrderEmail = async (order) => {
   }
 
   const html = `
-  <div style="font-family:Arial,sans-serif;background:#f8f9fa;padding:20px;color:#333;margin:0">
-    <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.1);overflow:hidden">
-      
-      <!-- Header with TFC Red Background -->
-      <div style="background:linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);padding:30px;text-align:center">
-        <h1 style="color:#fff;margin:0;font-size:32px;font-weight:bold;text-shadow:0 2px 4px rgba(0,0,0,0.3)">🍗 TFC - Thozha Fried Chicken & BBQ</h1>
-        <p style="color:#fef3c7;margin:10px 0 0 0;font-size:18px;font-weight:500">New Order Received!</p>
-        <div style="width:80px;height:4px;background:#fbbf24;margin:15px auto;border-radius:2px"></div>
+  <div style="font-family:Arial,sans-serif;background:#f2f2f2;padding:20px;margin:0">
+    <div style="max-width:620px;margin:auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.2)">
+      <!-- HEADER -->
+      <div style="background:linear-gradient(135deg,#c62828,#f9a825);padding:28px;text-align:center;color:#ffffff">
+        <h1 style="margin:0;font-size:26px;font-weight:bold">🍗 TFC - Thozha Fried Chicken & BBQ</h1>
+        <p style="margin-top:8px;font-size:15px">New Order Received!</p>
+        <div style="width:70px;height:4px;background:#ffffff;margin:14px auto;border-radius:5px"></div>
       </div>
-
-      <!-- Customer Details -->
-      <div style="padding:25px;background:#fff">
-        <div style="background:#fef3c7;padding:20px;border-radius:8px;margin-bottom:20px;border-left:4px solid #f59e0b">
-          <h2 style="color:#dc2626;margin:0 0 15px 0;font-size:20px;display:flex;align-items:center">
-            <span style="background:#dc2626;color:#fff;padding:8px;border-radius:50%;margin-right:10px;font-size:16px">👤</span>
-            Customer Details
-          </h2>
-          <table style="width:100%;color:#374151">
-            <tr><td style="padding:8px 0;font-weight:600;color:#dc2626">Name:</td><td style="padding:8px 0;font-weight:500">${order.customer}</td></tr>
-            <tr><td style="padding:8px 0;font-weight:600;color:#dc2626">Phone:</td><td style="padding:8px 0;font-weight:500">${order.phone}</td></tr>
-            <tr><td style="padding:8px 0;font-weight:600;color:#dc2626">Email:</td><td style="padding:8px 0;font-weight:500">${order.email}</td></tr>
-            <tr><td style="padding:8px 0;font-weight:600;color:#dc2626">Order Type:</td><td style="padding:8px 0;font-weight:500">${order.orderType === 'pickup' ? 'Store Pickup' : 'Home Delivery'}</td></tr>
-          </table>
+      
+      <!-- CONTENT -->
+      <div style="padding:22px">
+        <!-- CUSTOMER -->
+        <div style="background:#fff7d6;padding:18px;border-radius:10px;margin-bottom:18px">
+          <h3 style="margin:0 0 12px;color:#c62828">👤 Customer Details</h3>
+          <p><b>Name:</b> ${order.customer}</p>
+          <p><b>Phone:</b> ${order.phone}</p>
+          <p><b>Email:</b> ${order.email}</p>
+          <p><b>Order Type:</b> ${order.orderType === "pickup" ? "Store Pickup" : "Home Delivery"}</p>
         </div>
-
-        <!-- Order Items -->
-        <div style="background:#fff7ed;padding:20px;border-radius:8px;margin-bottom:20px;border-left:4px solid #f59e0b">
-          <h2 style="color:#dc2626;margin:0 0 15px 0;font-size:20px;display:flex;align-items:center">
-            <span style="background:#f59e0b;color:#fff;padding:8px;border-radius:50%;margin-right:10px;font-size:16px">🛍️</span>
-            Order Items
-          </h2>
-          ${order.items.map(item => `
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:2px solid #fed7aa;background:#fff;margin:8px 0;padding:15px;border-radius:6px;box-shadow:0 2px 4px rgba(0,0,0,0.05)">
-              <span style="color:#374151;font-weight:500">${item.name} × ${item.quantity}</span>
-              <span style="color:#dc2626;font-weight:bold;font-size:16px">₹${(item.price * item.quantity).toFixed(0)}</span>
+        
+        <!-- ITEMS -->
+        <div style="background:#fff3e0;padding:18px;border-radius:10px;margin-bottom:18px">
+          <h3 style="margin:0 0 12px;color:#c62828">🛍️ Order Items</h3>
+          ${order.items.map(i => `
+            <div style="display:flex;justify-content:space-between;border-bottom:1px dashed #ccc;padding:8px 0">
+              <span>${i.name} × ${i.quantity}</span>
+              <b>₹${(i.price * i.quantity)}</b>
             </div>
           `).join("")}
-          <div style="background:#dc2626;color:#fff;padding:15px;border-radius:8px;margin-top:15px;display:flex;justify-content:space-between;align-items:center">
-            <span style="font-size:18px;font-weight:600">Total Amount:</span>
-            <span style="font-size:24px;font-weight:bold">₹${order.total}</span>
+          <div style="margin-top:12px;background:#c62828;color:#fff;padding:12px;border-radius:8px;display:flex;justify-content:space-between;font-size:18px">
+            <b>Total Amount</b>
+            <b>₹${order.total}</b>
           </div>
         </div>
-
-        <!-- Payment Details -->
-        <div style="background:#fef3c7;padding:20px;border-radius:8px;margin-bottom:20px;border-left:4px solid #f59e0b">
-          <h2 style="color:#dc2626;margin:0 0 15px 0;font-size:20px;display:flex;align-items:center">
-            <span style="background:#f59e0b;color:#fff;padding:8px;border-radius:50%;margin-right:10px;font-size:16px">💳</span>
-            Payment Details
-          </h2>
-          <p style="color:#374151;margin:5px 0;font-size:16px">Method: <strong style="color:#dc2626">${order.paymentMethod === 'cod' ? (order.orderType === 'pickup' ? 'Pay at Store (Cash)' : 'Cash on Delivery') : 'UPI Online Pay'}</strong></p>
+        
+        <!-- PAYMENT -->
+        <div style="background:#fff7d6;padding:18px;border-radius:10px;margin-bottom:18px">
+          <h3 style="margin:0 0 12px;color:#c62828">💳 Payment Details</h3>
+          <p>Method: <b>${order.paymentMethod === "cod" ? (order.orderType === "pickup" ? "Pay at Store (Cash)" : "Cash on Delivery") : "UPI Online Pay"}</b></p>
           ${order.upiDetails ? `
-            <div style="margin-top:15px;padding:15px;background:#fff;border-radius:6px;border:2px solid #fed7aa">
-              <p style="color:#374151;margin:5px 0"><strong style="color:#dc2626">UPI App:</strong> ${order.upiDetails.app}</p>
-              <p style="color:#374151;margin:5px 0"><strong style="color:#dc2626">Customer UPI Name:</strong> ${order.upiDetails.name}</p>
-              <p style="color:#374151;margin:5px 0"><strong style="color:#dc2626">Customer UPI Mobile:</strong> ${order.upiDetails.mobile}</p>
+            <div style="margin-top:10px;padding:10px;background:#fff;border-radius:6px;border:2px solid #f9a825">
+              <p><b>UPI App:</b> ${order.upiDetails.app}</p>
+              <p><b>Customer UPI Name:</b> ${order.upiDetails.name}</p>
+              <p><b>Customer UPI Mobile:</b> ${order.upiDetails.mobile}</p>
             </div>
           ` : ''}
         </div>
-
-        <!-- Address -->
-        <div style="background:#fff7ed;padding:20px;border-radius:8px;margin-bottom:20px;border-left:4px solid #f59e0b">
-          <h2 style="color:#dc2626;margin:0 0 15px 0;font-size:20px;display:flex;align-items:center">
-            <span style="background:#dc2626;color:#fff;padding:8px;border-radius:50%;margin-right:10px;font-size:16px">📍</span>
-            ${order.orderType === 'pickup' ? 'Pickup Location' : 'Delivery Address'}
-          </h2>
-          <p style="color:#374151;margin:0;line-height:1.6;font-size:16px;background:#fff;padding:15px;border-radius:6px;border:2px solid #fed7aa">${order.address}</p>
+        
+        <!-- ADDRESS -->
+        <div style="background:#fff3e0;padding:18px;border-radius:10px">
+          <h3 style="margin:0 0 12px;color:#c62828">📍 ${order.orderType === "pickup" ? "Pickup Location" : "Delivery Address"}</h3>
+          <p>${order.address}</p>
         </div>
       </div>
-
-      <!-- Footer -->
-      <div style="background:linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);padding:25px;text-align:center;color:#fff">
-        <h3 style="color:#fbbf24;margin:0 0 15px 0;font-size:22px;font-weight:bold">TFC - Thozha Fried Chicken & BBQ</h3>
-        <div style="background:rgba(255,255,255,0.1);padding:20px;border-radius:8px;margin:15px 0">
-          <p style="color:#fef3c7;margin:5px 0;font-size:16px">📍 BKN School Opposite, Nasiyanur, Erode</p>
-          <p style="color:#fef3c7;margin:5px 0;font-size:16px">Tamil Nadu, India</p>
-          <p style="color:#fef3c7;margin:10px 0;font-size:16px">📞 +91 6379151006 | +91 8508436152</p>
-          <p style="color:#fef3c7;margin:5px 0;font-size:16px">📧 tfcfoodorder@gmail.com</p>
-        </div>
-        <p style="color:#fed7aa;margin:15px 0 5px 0;font-size:14px;font-weight:500">Business Hours: Monday-Sunday 12:00 PM - 11:00 PM</p>
-        <div style="margin-top:20px;padding-top:15px;border-top:2px solid rgba(255,255,255,0.2)">
-          <p style="color:#fed7aa;margin:0;font-size:12px">🍗 Delicious food delivered with love & care 🍗</p>
-        </div>
+      
+      <!-- FOOTER -->
+      <div style="background:linear-gradient(135deg,#c62828,#f9a825);padding:22px;text-align:center;color:#ffffff">
+        <h3 style="margin:0">TFC - Thozha Fried Chicken & BBQ</h3>
+        <p>BKN School Opposite, Nasiyanur, Erode</p>
+        <p>� +91 6379151006 | +91 8508436152</p>
+        <p>📧 tfcfoodorder@gmail.com</p>
+        <p style="font-size:12px;margin-top:10px">Business Hours: 12:00 PM - 11:00 PM</p>
       </div>
     </div>
   </div>
