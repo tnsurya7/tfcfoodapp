@@ -5,11 +5,6 @@ export const sendOrderEmail = async (order) => {
   const templateId = process.env.NEXT_PUBLIC_ORDER_EMAILJS_TEMPLATE_ID;
   const publicKey = process.env.NEXT_PUBLIC_ORDER_EMAILJS_PUBLIC_KEY;
 
-  console.log("🔧 EmailJS Environment Check:");
-  console.log("Service ID:", serviceId ? "✅ Set" : "❌ Missing");
-  console.log("Template ID:", templateId ? "✅ Set" : "❌ Missing");
-  console.log("Public Key:", publicKey ? "✅ Set" : "❌ Missing");
-
   if (!serviceId || !templateId || !publicKey) {
     console.error("❌ Missing EmailJS environment variables");
     throw new Error("EmailJS configuration incomplete");
@@ -79,14 +74,7 @@ export const sendOrderEmail = async (order) => {
 
   try {
     console.log("📧 Sending order email to tfcfoodorder@gmail.com...");
-    console.log("📋 Order summary:", {
-      customer: order.customer,
-      total: order.total,
-      items: order.items.length,
-      paymentMethod: order.paymentMethod,
-      orderType: order.orderType
-    });
-
+    
     const result = await emailjs.send(
       serviceId,
       templateId,
