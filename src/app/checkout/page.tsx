@@ -301,13 +301,21 @@ function CheckoutContent() {
             });
             
             if (result.success) {
-                // Send order email notification
+                // 🔥 FORCE ORDER EMAIL TO SEND
+                console.log('🚀 Order placed successfully, sending email...');
                 try {
+                    console.log('📧 Calling sendOrderEmail with data:', {
+                        customer: orderData.customer,
+                        email: orderData.email,
+                        total: orderData.total,
+                        paymentMethod: orderData.paymentMethod
+                    });
+                    
                     await sendOrderEmail(orderData);
-                    console.log('Order email sent successfully');
+                    console.log('✅ Order email triggered successfully');
                 } catch (emailError) {
-                    console.error('Failed to send order email:', emailError);
-                    // Don't show error to user - order was still placed successfully
+                    console.error('❌ Order email failed:', emailError);
+                    // Still show success to user since order was placed
                 }
             } else {
                 // If order fails, revert the optimistic update
