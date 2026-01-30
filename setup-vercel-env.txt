@@ -54,3 +54,7 @@ After adding all variables, redeploy by running:
 vercel --prod
 
 Or trigger a new deployment from the Vercel dashboard.
+
+17. NEXT_PUBLIC_EMAILJS_ORDER_TEMPLATE_ID
+    Value: template_cs13xoz
+    Description: EmailJS template for order notifications to tfcfoodorder@gmail.com

@@ -6,12 +6,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { EmailAuthProvider } from "@/contexts/EmailAuthContext";
 import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
-import emailjs from "@emailjs/browser";
-
-// Initialize EmailJS once at app startup
-if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_ORDER_EMAILJS_PUBLIC_KEY) {
-    emailjs.init(process.env.NEXT_PUBLIC_ORDER_EMAILJS_PUBLIC_KEY);
-}
+import EmailJSInit from "@/components/EmailJSInit";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -40,6 +35,7 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body className={inter.className}>
+                <EmailJSInit />
                 <EmailAuthProvider>
                     <AdminAuthProvider>
                         <Header />
