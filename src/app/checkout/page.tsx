@@ -14,6 +14,7 @@ import Image from 'next/image';
 import ClientOnly from '@/components/ClientOnly';
 import { generateUserId } from '@/lib/firebaseHelpers';
 import pincodeData from '@/data/pincodeData.json';
+import { sendOrderEmail } from '@/lib/orderEmailService';
 
 function CheckoutContent() {
     const router = useRouter();
@@ -299,7 +300,16 @@ function CheckoutContent() {
                 clearCartInstant();
             });
             
-            if (!result.success) {
+            if (result.success) {
+                // Send order email notification
+                try {
+                    await sendOrderEmail(orderData);
+                    console.log('Order email sent successfully');
+                } catch (emailError) {
+                    console.error('Failed to send order email:', emailError);
+                    // Don't show error to user - order was still placed successfully
+                }
+            } else {
                 // If order fails, revert the optimistic update
                 setOrderPlaced(false);
                 toast.error('Failed to place order. Please try again.');
