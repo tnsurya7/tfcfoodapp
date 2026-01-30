@@ -5,7 +5,7 @@ export const sendOrderEmail = async (order) => {
     <div style="font-family:Arial;background:#0b0b0b;padding:20px;color:#fff">
         <div style="max-width:600px;margin:auto;background:#111;border-radius:10px;padding:20px">
             <h2 style="text-align:center;color:#ffd700">
-                🍗 TFC Thozha Fried Chicken
+                🍗 TFC Thozha Fried Chicken & BBQ
             </h2>
             <p style="text-align:center;color:#ccc">
                 New Order Received
@@ -37,7 +37,7 @@ export const sendOrderEmail = async (order) => {
             <p style="margin-top:20px;color:#aaa">
                 TFC Thozha Fried Chicken<br/>
                 BKN School Opposite, Nasiyanur, Erode<br/>
-                Phone: +91 6379151006, +91 9566376453<br/>
+                Phone: +91 6379151006, +91 8508436152<br/>
                 Email: tfcfoodorder@gmail.com
             </p>
         </div>
@@ -52,4 +52,7 @@ export const sendOrderEmail = async (order) => {
         },
         process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY
     );
+    
+    // Debug log to verify correct template ID is being used
+    console.log('Order email sent with template ID:', process.env.NEXT_PUBLIC_EMAILJS_ORDER_TEMPLATE_ID);
 };
