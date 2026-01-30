@@ -38,7 +38,7 @@ export default function Footer() {
                                 <Instagram className="w-5 h-5" />
                             </a>
                             <a 
-                                href="mailto:tfcfoodapp@gmail.com" 
+                                href="mailto:tfcfoodorder@gmail.com" 
                                 className="hover:text-primary transition-colors"
                                 aria-label="Email"
                             >
@@ -145,10 +145,10 @@ export default function Footer() {
                             <li className="flex items-center space-x-2">
                                 <Mail className="w-5 h-5 text-primary flex-shrink-0" />
                                 <a 
-                                    href="mailto:tfcfoodapp@gmail.com"
+                                    href="mailto:tfcfoodorder@gmail.com"
                                     className="hover:text-primary transition-colors"
                                 >
-                                    tfcfoodapp@gmail.com
+                                    tfcfoodorder@gmail.com
                                 </a>
                             </li>
                             <li className="text-xs">
