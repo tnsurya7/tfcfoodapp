@@ -1,6 +1,21 @@
 import emailjs from "@emailjs/browser";
 
 export const sendOrderEmail = async (order) => {
+    // Ensure we have the correct template ID
+    const templateId = process.env.NEXT_PUBLIC_EMAILJS_ORDER_TEMPLATE_ID;
+    const serviceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
+    const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
+    
+    console.log('🔧 EmailJS Config Check:');
+    console.log('Service ID:', serviceId);
+    console.log('Template ID:', templateId);
+    console.log('Public Key:', publicKey ? 'Present' : 'Missing');
+    
+    if (!templateId || !serviceId || !publicKey) {
+        console.error('❌ Missing EmailJS environment variables');
+        throw new Error('EmailJS configuration incomplete');
+    }
+
     const html = `
     <div style="font-family:Arial;background:#0b0b0b;padding:20px;color:#fff">
         <div style="max-width:600px;margin:auto;background:#111;border-radius:10px;padding:20px">
@@ -45,14 +60,13 @@ export const sendOrderEmail = async (order) => {
     `;
 
     await emailjs.send(
-        process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID,
-        process.env.NEXT_PUBLIC_EMAILJS_ORDER_TEMPLATE_ID,
+        serviceId,
+        templateId,
         {
             message_html: html
         },
-        process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY
+        publicKey
     );
     
-    // Debug log to verify correct template ID is being used
-    console.log('Order email sent with template ID:', process.env.NEXT_PUBLIC_EMAILJS_ORDER_TEMPLATE_ID);
+    console.log('✅ Order email sent successfully with template:', templateId);
 };
