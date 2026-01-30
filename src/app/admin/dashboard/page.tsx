@@ -30,7 +30,8 @@ import {
     listenToUsers,
     getDatabaseStats,
     getDeliveredRevenue,
-    getAdminStats
+    getAdminStats,
+    deleteCustomer
 } from '@/lib/firebaseHelpers';
 import { useFirebaseFoodStore } from '@/store/firebaseFoodStore';
 import { seedTFCFoodsOnce } from '@/lib/seedFoods';
@@ -234,6 +235,36 @@ function AdminDashboardContent() {
                             }
                         } catch (error) {
                             toast.error('Failed to delete order');
+                        }
+                    },
+                    style: 'bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded'
+                },
+                {
+                    label: 'Cancel',
+                    onClick: () => {},
+                    style: 'bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-1 rounded'
+                }
+            ]
+        );
+    };
+
+    const handleDeleteCustomer = async (userId: string, userEmail: string, userName: string) => {
+        toast.action(
+            `Are you sure you want to delete customer "${userName}"? This will remove their account and cart data.`,
+            [
+                {
+                    label: 'Delete Customer',
+                    onClick: async () => {
+                        try {
+                            const result = await deleteCustomer(userId, userEmail);
+                            if (result.success) {
+                                toast.success('Customer deleted successfully');
+                                // Users will update automatically via listener
+                            } else {
+                                toast.error('Failed to delete customer');
+                            }
+                        } catch (error) {
+                            toast.error('Failed to delete customer');
                         }
                     },
                     style: 'bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded'
@@ -1021,6 +1052,16 @@ function AdminDashboardContent() {
                                                         <div className="text-xs text-gray-500 dark:text-gray-400">
                                                             Joined: {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}
                                                         </div>
+                                                        
+                                                        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                                                            <button
+                                                                onClick={() => handleDeleteCustomer(user.id, user.email, user.name)}
+                                                                className="w-full bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                                <span>Delete Customer</span>
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 );
                                             })}
@@ -1052,6 +1093,9 @@ function AdminDashboardContent() {
                                                         <th className="text-left py-3 px-4 font-semibold dark:text-white">
                                                             Account Created
                                                         </th>
+                                                        <th className="text-left py-3 px-4 font-semibold dark:text-white">
+                                                            Actions
+                                                        </th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -1073,6 +1117,15 @@ function AdminDashboardContent() {
                                                                 </td>
                                                                 <td className="py-3 px-4 dark:text-gray-400">
                                                                     {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}
+                                                                </td>
+                                                                <td className="py-3 px-4">
+                                                                    <button
+                                                                        onClick={() => handleDeleteCustomer(user.id, user.email, user.name)}
+                                                                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium transition-colors flex items-center space-x-1"
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4" />
+                                                                        <span>Delete</span>
+                                                                    </button>
                                                                 </td>
                                                             </tr>
                                                         );

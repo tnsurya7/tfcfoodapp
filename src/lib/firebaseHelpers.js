@@ -448,3 +448,34 @@ export const listenToUsers = (callback) => {
 export const generateUserId = (email) => {
     return email.replace(/\./g, '_').replace(/@/g, '_at_');
 };
+// Delete customer and all related data
+export const deleteCustomer = async (userId, userEmail) => {
+    if (!database) throw new Error('Database not available');
+    
+    try {
+        // Delete user data
+        await remove(ref(database, `tfc/users/${userId}`));
+        
+        // Delete user's cart
+        await remove(ref(database, `tfc/carts/${userId}`));
+        
+        // Delete user's orders (optional - you might want to keep orders for business records)
+        // Uncomment the lines below if you want to delete orders too
+        // const ordersRef = ref(database, "tfc/orders");
+        // const ordersSnapshot = await get(ordersRef);
+        // if (ordersSnapshot.exists()) {
+        //     const orders = ordersSnapshot.val();
+        //     const userOrderIds = Object.keys(orders).filter(orderId => 
+        //         orders[orderId].email === userEmail
+        //     );
+        //     for (const orderId of userOrderIds) {
+        //         await remove(ref(database, `tfc/orders/${orderId}`));
+        //     }
+        // }
+        
+        return { success: true };
+    } catch (error) {
+        console.error('Error deleting customer:', error);
+        return { success: false, error: error.message };
+    }
+};
