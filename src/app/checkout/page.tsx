@@ -46,6 +46,7 @@ function CheckoutContent() {
     const TFC_UPI_ID = process.env.NEXT_PUBLIC_TFC_UPI_ID;
     const TFC_UPI_NAME = process.env.NEXT_PUBLIC_TFC_UPI_NAME;
     const TFC_UPI_MOBILE = process.env.NEXT_PUBLIC_TFC_UPI_MOBILE;
+    const PHONEPE_UPI_ID = process.env.NEXT_PUBLIC_PHONEPE_TFC_UPI_ID;
 
     // Mobile Detection
     const isMobile = () => {
@@ -196,26 +197,43 @@ function CheckoutContent() {
         setUpiAppUsed(
             app === "gpay" ? "Google Pay" :
             app === "phonepe" ? "PhonePe" :
-            app === "paytm" ? "Paytm" :
-            "Other UPI App"
+            "Paytm"
         );
         
         // Only open UPI apps on mobile devices
         if (!isMobile()) return;
         
         const amount = finalTotal;
-        const upiId = TFC_UPI_ID;
         const merchantName = encodeURIComponent(`${TFC_UPI_NAME}`);
         const transactionNote = encodeURIComponent('TFC Food Order');
         
         let deepLinkUrl = "";
+        let upiId = "";
         
-        // 🔥 FORCE WhatsApp UPI - Always use universal UPI link for ALL buttons
-        deepLinkUrl = `upi://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
+        // 🎯 App-Specific UPI Configuration for Better Compatibility
+        if (app === "phonepe") {
+            // PhonePe uses specific @axl UPI ID for better compatibility
+            upiId = PHONEPE_UPI_ID || TFC_UPI_ID || ""; // Fallback to main UPI if not set
+            deepLinkUrl = `phonepe://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
+            console.log(`🔗 Opening PhonePe with @axl UPI:`, deepLinkUrl);
+        } else if (app === "gpay") {
+            // Google Pay uses main UPI ID
+            upiId = TFC_UPI_ID || "";
+            deepLinkUrl = `tez://upi/pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
+            console.log(`🔗 Opening Google Pay:`, deepLinkUrl);
+        } else if (app === "paytm") {
+            // Paytm uses main UPI ID
+            upiId = TFC_UPI_ID || "";
+            deepLinkUrl = `paytmmp://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
+            console.log(`🔗 Opening Paytm:`, deepLinkUrl);
+        } else {
+            // Universal fallback for other UPI apps (WhatsApp, BHIM, etc.)
+            upiId = TFC_UPI_ID || "";
+            deepLinkUrl = `upi://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
+            console.log(`🔗 Opening Universal UPI (WhatsApp/Others):`, deepLinkUrl);
+        }
         
-        console.log(`🔗 Opening WhatsApp UPI (regardless of button clicked):`, deepLinkUrl);
-        
-        // Open the universal UPI link
+        // Open the app-specific deep link
         window.location.href = deepLinkUrl;
     };
 
@@ -715,9 +733,9 @@ function CheckoutContent() {
                                         </div>
                                         
                                         {/* Helpful Message for UPI Apps */}
-                                        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                                            <p className="text-sm text-green-800 text-center">
-                                                <span className="font-semibold">💡 Tip:</span> All buttons will open WhatsApp UPI for secure payment processing.
+                                        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                            <p className="text-sm text-blue-800 text-center">
+                                                <span className="font-semibold">💡 Tip:</span> Each button opens its specific app. PhonePe uses optimized @axl UPI for better compatibility.
                                             </p>
                                         </div>
                                     </div>
