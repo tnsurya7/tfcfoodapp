@@ -42,11 +42,10 @@ function CheckoutContent() {
     const [upiMobile, setUpiMobile] = useState("");
     const [showUpiForm, setShowUpiForm] = useState(false);
 
-    // ENV Variables - No Hardcoding
+    // ENV Variables - Single Stable UPI ID (No Hardcoding)
     const TFC_UPI_ID = process.env.NEXT_PUBLIC_TFC_UPI_ID;
     const TFC_UPI_NAME = process.env.NEXT_PUBLIC_TFC_UPI_NAME;
     const TFC_UPI_MOBILE = process.env.NEXT_PUBLIC_TFC_UPI_MOBILE;
-    const PHONEPE_UPI_ID = process.env.NEXT_PUBLIC_PHONEPE_TFC_UPI_ID;
 
     // Mobile Detection
     const isMobile = () => {
@@ -192,13 +191,9 @@ function CheckoutContent() {
     };
 
     // UPI Deep Link Function - App-Specific Routes + Universal Fallback
-    const openUpiApp = (app: string) => {
-        // Set app name for all devices
-        setUpiAppUsed(
-            app === "gpay" ? "Google Pay" :
-            app === "phonepe" ? "PhonePe" :
-            "Paytm"
-        );
+    const openUpiApp = () => {
+        // Set UPI as payment method for tracking
+        setUpiAppUsed("UPI Payment");
         
         // Only open UPI apps on mobile devices
         if (!isMobile()) return;
@@ -206,35 +201,16 @@ function CheckoutContent() {
         const amount = finalTotal;
         const merchantName = encodeURIComponent(`${TFC_UPI_NAME}`);
         const transactionNote = encodeURIComponent('TFC Food Order');
+        const upiId = TFC_UPI_ID || "";
         
-        let deepLinkUrl = "";
-        let upiId = "";
+        // ✅ Single Universal UPI Link - Reduces Risk Score
+        // Let user's phone choose the UPI app (safer than forced deep links)
+        const universalUpiUrl = `upi://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
         
-        // 🎯 App-Specific UPI Configuration for Better Compatibility
-        if (app === "phonepe") {
-            // PhonePe uses specific @axl UPI ID for better compatibility
-            upiId = PHONEPE_UPI_ID || TFC_UPI_ID || ""; // Fallback to main UPI if not set
-            deepLinkUrl = `phonepe://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
-            console.log(`🔗 Opening PhonePe with @axl UPI:`, deepLinkUrl);
-        } else if (app === "gpay") {
-            // Google Pay uses main UPI ID
-            upiId = TFC_UPI_ID || "";
-            deepLinkUrl = `tez://upi/pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
-            console.log(`🔗 Opening Google Pay:`, deepLinkUrl);
-        } else if (app === "paytm") {
-            // Paytm uses main UPI ID
-            upiId = TFC_UPI_ID || "";
-            deepLinkUrl = `paytmmp://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
-            console.log(`🔗 Opening Paytm:`, deepLinkUrl);
-        } else {
-            // Universal fallback for other UPI apps (WhatsApp, BHIM, etc.)
-            upiId = TFC_UPI_ID || "";
-            deepLinkUrl = `upi://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
-            console.log(`🔗 Opening Universal UPI (WhatsApp/Others):`, deepLinkUrl);
-        }
+        console.log(`🔗 Opening Universal UPI (user chooses app):`, universalUpiUrl);
         
-        // Open the app-specific deep link
-        window.location.href = deepLinkUrl;
+        // Open universal UPI link - phone will show app chooser
+        window.location.href = universalUpiUrl;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -696,46 +672,54 @@ function CheckoutContent() {
                                 <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                                     <h3 className="text-lg font-semibold mb-4 text-blue-800">Complete UPI Payment</h3>
                                     
-                                    {/* UPI App Buttons */}
+                                    {/* Single UPI Button - Reduces Risk Score */}
                                     <div className="mb-4">
-                                        <p className="text-sm text-gray-600 mb-3">Select your UPI app to pay ₹{finalTotal}:</p>
-                                        <div className="grid grid-cols-3 gap-3">
-                                            <button
-                                                type="button"
-                                                onClick={() => openUpiApp("gpay")}
-                                                className="flex flex-col items-center p-3 bg-white border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
-                                            >
-                                                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center mb-2">
-                                                    <span className="text-white text-xs font-bold">G</span>
+                                        <p className="text-sm text-gray-600 mb-3">Pay ₹{finalTotal} via UPI:</p>
+                                        
+                                        {/* Main UPI Button */}
+                                        <button
+                                            type="button"
+                                            onClick={openUpiApp}
+                                            className="w-full flex items-center justify-center p-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg"
+                                        >
+                                            <div className="flex items-center space-x-3">
+                                                <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                                    <span className="text-white text-lg font-bold">₹</span>
                                                 </div>
-                                                <span className="text-xs font-medium">Google Pay</span>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => openUpiApp("phonepe")}
-                                                className="flex flex-col items-center p-3 bg-white border border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors"
-                                            >
-                                                <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center mb-2">
-                                                    <span className="text-white text-xs font-bold">P</span>
+                                                <div className="text-left">
+                                                    <div className="font-semibold text-lg">Pay with UPI</div>
+                                                    <div className="text-sm opacity-90">Choose your preferred UPI app</div>
                                                 </div>
-                                                <span className="text-xs font-medium">PhonePe</span>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => openUpiApp("paytm")}
-                                                className="flex flex-col items-center p-3 bg-white border border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors"
-                                            >
-                                                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mb-2">
-                                                    <span className="text-white text-xs font-bold">P</span>
+                                            </div>
+                                        </button>
+                                        
+                                        {/* QR Code Backup */}
+                                        <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                            <div className="text-center">
+                                                <h4 className="text-sm font-semibold text-gray-700 mb-2">Alternative: Scan QR Code</h4>
+                                                <div className="inline-block p-3 bg-white rounded-lg border">
+                                                    <div className="w-32 h-32 bg-gray-100 rounded flex items-center justify-center">
+                                                        <div className="text-center text-xs text-gray-500">
+                                                            <div className="mb-1">📱</div>
+                                                            <div>QR Code</div>
+                                                            <div>₹{finalTotal}</div>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <span className="text-xs font-medium">Paytm</span>
-                                            </button>
+                                                <p className="text-xs text-gray-600 mt-2">
+                                                    Open any UPI app → Scan QR → Pay ₹{finalTotal}
+                                                </p>
+                                                <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-700">
+                                                    <strong>UPI ID:</strong> {TFC_UPI_ID}<br/>
+                                                    <strong>Name:</strong> {TFC_UPI_NAME}
+                                                </div>
+                                            </div>
                                         </div>
                                         
-                                        {/* Helpful Message for UPI Apps */}
-                                        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                            <p className="text-sm text-blue-800 text-center">
-                                                <span className="font-semibold">💡 Tip:</span> Each button opens its specific app. PhonePe uses optimized @axl UPI for better compatibility.
+                                        {/* Helpful Message */}
+                                        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                            <p className="text-sm text-green-800 text-center">
+                                                <span className="font-semibold">💡 Tip:</span> If UPI button fails, please use QR code for guaranteed payment.
                                             </p>
                                         </div>
                                     </div>
