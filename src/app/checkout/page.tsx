@@ -190,28 +190,42 @@ function CheckoutContent() {
         }
     };
 
-    // UPI Deep Link Function - Most Compatible & Safe Format
+    // UPI Deep Link Function - App-Specific Routes + Universal Fallback
     const openUpiApp = (app: string) => {
         // Set app name for all devices
         setUpiAppUsed(
             app === "gpay" ? "Google Pay" :
             app === "phonepe" ? "PhonePe" :
-            "Paytm"
+            app === "paytm" ? "Paytm" :
+            "Other UPI App"
         );
         
         // Only open UPI apps on mobile devices
         if (!isMobile()) return;
         
         const amount = finalTotal;
+        const upiId = TFC_UPI_ID;
+        const merchantName = encodeURIComponent(`${TFC_UPI_NAME}`);
+        const transactionNote = encodeURIComponent('TFC Food Order');
         
-        // ✅ RECOMMENDED UPI PAYMENT URL - Works with ALL UPI apps
-        // Format: upi://pay?pa=UPI_ID&pn=NAME&am=AMOUNT&cu=INR&tn=DESCRIPTION
-        const upiUrl = `upi://pay?pa=${TFC_UPI_ID}&pn=${encodeURIComponent(`${TFC_UPI_NAME} - ${TFC_UPI_MOBILE}`)}&am=${amount}&cu=INR&tn=${encodeURIComponent('TFC Food Order')}`;
+        let deepLinkUrl = "";
         
-        console.log(`🔗 Opening ${app} with UPI URL:`, upiUrl);
+        // � App-Specific Deep Links (Prevents WhatsApp opening)
+        if (app === "gpay") {
+            deepLinkUrl = `tez://upi/pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
+        } else if (app === "phonepe") {
+            deepLinkUrl = `phonepe://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
+        } else if (app === "paytm") {
+            deepLinkUrl = `paytmmp://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
+        } else {
+            // ✅ Universal Fallback for "Other UPI Apps" button
+            deepLinkUrl = `upi://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
+        }
         
-        // Universal UPI URL - works with Google Pay, PhonePe, Paytm, and all UPI apps
-        window.location.href = upiUrl;
+        console.log(`🔗 Opening ${app} with specific deep link:`, deepLinkUrl);
+        
+        // Open the app-specific deep link
+        window.location.href = deepLinkUrl;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -676,7 +690,7 @@ function CheckoutContent() {
                                     {/* UPI App Buttons */}
                                     <div className="mb-4">
                                         <p className="text-sm text-gray-600 mb-3">Select your UPI app to pay ₹{finalTotal}:</p>
-                                        <div className="grid grid-cols-3 gap-3">
+                                        <div className="grid grid-cols-2 gap-3 mb-3">
                                             <button
                                                 type="button"
                                                 onClick={() => openUpiApp("gpay")}
@@ -697,6 +711,8 @@ function CheckoutContent() {
                                                 </div>
                                                 <span className="text-xs font-medium">PhonePe</span>
                                             </button>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
                                             <button
                                                 type="button"
                                                 onClick={() => openUpiApp("paytm")}
@@ -707,12 +723,22 @@ function CheckoutContent() {
                                                 </div>
                                                 <span className="text-xs font-medium">Paytm</span>
                                             </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => openUpiApp("other")}
+                                                className="flex flex-col items-center p-3 bg-white border border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors"
+                                            >
+                                                <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center mb-2">
+                                                    <span className="text-white text-xs font-bold">U</span>
+                                                </div>
+                                                <span className="text-xs font-medium">Other UPI</span>
+                                            </button>
                                         </div>
                                         
                                         {/* Helpful Message for UPI Apps */}
-                                        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                                            <p className="text-sm text-green-800 text-center">
-                                                <span className="font-semibold">💡 Tip:</span> If PhonePe fails, please try Google Pay or Paytm.
+                                        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                            <p className="text-sm text-blue-800 text-center">
+                                                <span className="font-semibold">💡 Tip:</span> Each button opens its specific app. Use "Other UPI" for BHIM, Amazon Pay, etc.
                                             </p>
                                         </div>
                                     </div>
