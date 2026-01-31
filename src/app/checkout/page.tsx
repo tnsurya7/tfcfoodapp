@@ -225,7 +225,7 @@ function CheckoutContent() {
         console.log(`🔗 Opening ${app} with specific deep link:`, deepLinkUrl);
         
         // Open the universal UPI link
-        window.location.href = upiUrl;
+        window.location.href = deepLinkUrl;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
