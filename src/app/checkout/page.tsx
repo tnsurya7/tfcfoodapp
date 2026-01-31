@@ -190,16 +190,10 @@ function CheckoutContent() {
         }
     };
 
-    // UPI Deep Link Function - App-Specific Routes + Universal Fallback
-    const openUpiApp = (app: string) => {
-        // Set app name for tracking
-        setUpiAppUsed(
-            app === "gpay" ? "Google Pay" :
-            app === "phonepe" ? "PhonePe" :
-            "Paytm"
-        );
+    // Safe Universal UPI Payment Function - Industry Standard
+    const openUpiApp = () => {
+        setUpiAppUsed("UPI Payment");
         
-        // Only open UPI apps on mobile devices
         if (!isMobile()) return;
         
         const amount = finalTotal;
@@ -207,26 +201,35 @@ function CheckoutContent() {
         const transactionNote = encodeURIComponent('TFC Food Order');
         const upiId = TFC_UPI_ID || "";
         
-        let deepLinkUrl = "";
+        // ✅ SAFE: Universal UPI protocol - shows app chooser
+        const upiUrl = `upi://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
         
-        // 🎯 App-Specific Deep Links with Stable UPI ID
-        if (app === "gpay") {
-            deepLinkUrl = `tez://upi/pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
-            console.log(`🔗 Opening Google Pay:`, deepLinkUrl);
-        } else if (app === "phonepe") {
-            deepLinkUrl = `phonepe://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
-            console.log(`🔗 Opening PhonePe:`, deepLinkUrl);
-        } else if (app === "paytm") {
-            deepLinkUrl = `paytmmp://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
-            console.log(`🔗 Opening Paytm:`, deepLinkUrl);
-        } else {
-            // Universal fallback for other UPI apps
-            deepLinkUrl = `upi://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
-            console.log(`🔗 Opening Universal UPI:`, deepLinkUrl);
+        console.log(`🔗 Opening UPI App Chooser:`, upiUrl);
+        window.location.href = upiUrl;
+    };
+
+    // Generate QR Code URL for UPI payment
+    const generateQRCode = () => {
+        const amount = finalTotal;
+        const merchantName = encodeURIComponent(`${TFC_UPI_NAME}`);
+        const transactionNote = encodeURIComponent('TFC Food Order');
+        const upiId = TFC_UPI_ID || "";
+        
+        const upiString = `upi://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
+        
+        // Using QR Server API to generate QR code
+        return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiString)}`;
+    };
+
+    // Copy to clipboard functions
+    const copyToClipboard = async (text: string, label: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            toast.success(`${label} copied to clipboard!`);
+        } catch (error) {
+            console.error('Copy failed:', error);
+            toast.error('Copy failed. Please copy manually.');
         }
-        
-        // Open the app-specific deep link
-        window.location.href = deepLinkUrl;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -688,71 +691,74 @@ function CheckoutContent() {
                                 <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                                     <h3 className="text-lg font-semibold mb-4 text-blue-800">Complete UPI Payment</h3>
                                     
-                                    {/* UPI App Buttons */}
+                                    {/* Safe UPI Payment System - QR + Universal Open Button */}
                                     <div className="mb-4">
-                                        <p className="text-sm text-gray-600 mb-3">Select your UPI app to pay ₹{finalTotal}:</p>
-                                        <div className="grid grid-cols-3 gap-3">
-                                            <button
-                                                type="button"
-                                                onClick={() => openUpiApp("gpay")}
-                                                className="flex flex-col items-center p-3 bg-white border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
-                                            >
-                                                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center mb-2">
-                                                    <span className="text-white text-xs font-bold">G</span>
-                                                </div>
-                                                <span className="text-xs font-medium">Google Pay</span>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => openUpiApp("phonepe")}
-                                                className="flex flex-col items-center p-3 bg-white border border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors"
-                                            >
-                                                <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center mb-2">
-                                                    <span className="text-white text-xs font-bold">P</span>
-                                                </div>
-                                                <span className="text-xs font-medium">PhonePe</span>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => openUpiApp("paytm")}
-                                                className="flex flex-col items-center p-3 bg-white border border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors"
-                                            >
-                                                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mb-2">
-                                                    <span className="text-white text-xs font-bold">P</span>
-                                                </div>
-                                                <span className="text-xs font-medium">Paytm</span>
-                                            </button>
-                                        </div>
+                                        <p className="text-sm text-gray-600 mb-4">Pay ₹{finalTotal} via UPI:</p>
                                         
-                                        {/* QR Code Section */}
-                                        <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                        {/* Auto-Generated QR Code */}
+                                        <div className="bg-white p-4 rounded-lg border-2 border-gray-200 mb-4">
                                             <div className="text-center">
-                                                <h4 className="text-sm font-semibold text-gray-700 mb-3">Or Scan QR Code to Pay</h4>
-                                                <div className="inline-block p-3 bg-white rounded-lg border-2 border-dashed border-gray-300">
-                                                    <div className="w-32 h-32 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg flex items-center justify-center border">
-                                                        <div className="text-center text-sm text-gray-600">
-                                                            <div className="text-2xl mb-2">📱</div>
-                                                            <div className="font-semibold">QR Code</div>
-                                                            <div className="text-xs mt-1">₹{finalTotal}</div>
-                                                        </div>
-                                                    </div>
+                                                <h4 className="text-lg font-semibold text-gray-800 mb-3">Scan QR Code to Pay</h4>
+                                                <div className="inline-block p-4 bg-gray-50 rounded-lg border">
+                                                    <Image
+                                                        src={generateQRCode()}
+                                                        alt="UPI QR Code"
+                                                        width={200}
+                                                        height={200}
+                                                        className="rounded-lg"
+                                                    />
                                                 </div>
-                                                <div className="mt-3 space-y-1">
-                                                    <p className="text-xs text-gray-600">
-                                                        Open any UPI app → Scan QR → Pay ₹{finalTotal}
-                                                    </p>
-                                                    <div className="bg-blue-50 p-2 rounded text-xs text-blue-700">
-                                                        <div><strong>UPI ID:</strong> {TFC_UPI_ID}</div>
-                                                        <div><strong>Name:</strong> {TFC_UPI_NAME}</div>
-                                                    </div>
-                                                </div>
+                                                <p className="text-xs text-gray-600 mt-2">
+                                                    Open any UPI app → Scan QR → Pay ₹{finalTotal}
+                                                </p>
                                             </div>
                                         </div>
-                                        
-                                        {/* Helpful Message */}
-                                        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                                            <p className="text-sm text-green-800 text-center">
-                                                <span className="font-semibold">💡 Tip:</span> Choose your preferred UPI app above, or scan QR code for guaranteed payment.
+
+                                        {/* Universal Open UPI App Button */}
+                                        <button
+                                            type="button"
+                                            onClick={openUpiApp}
+                                            className="w-full flex items-center justify-center p-4 bg-gradient-to-r from-green-500 to-blue-600 text-white rounded-lg hover:from-green-600 hover:to-blue-700 transition-all duration-200 shadow-lg mb-4"
+                                        >
+                                            <div className="flex items-center space-x-3">
+                                                <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                                    <span className="text-white text-lg font-bold">₹</span>
+                                                </div>
+                                                <div className="text-left">
+                                                    <div className="font-semibold text-lg">Open UPI App</div>
+                                                    <div className="text-sm opacity-90">Choose your preferred UPI app</div>
+                                                </div>
+                                            </div>
+                                        </button>
+
+                                        {/* Copy Options */}
+                                        <div className="grid grid-cols-2 gap-3 mb-4">
+                                            <button
+                                                type="button"
+                                                onClick={() => copyToClipboard(TFC_UPI_ID || "", "UPI ID")}
+                                                className="flex items-center justify-center p-3 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                                            >
+                                                <div className="text-center">
+                                                    <div className="text-sm font-semibold text-blue-800">Copy UPI ID</div>
+                                                    <div className="text-xs text-blue-600 mt-1">{TFC_UPI_ID}</div>
+                                                </div>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => copyToClipboard(TFC_UPI_MOBILE || "", "UPI Phone")}
+                                                className="flex items-center justify-center p-3 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
+                                            >
+                                                <div className="text-center">
+                                                    <div className="text-sm font-semibold text-purple-800">Copy Phone</div>
+                                                    <div className="text-xs text-purple-600 mt-1">{TFC_UPI_MOBILE}</div>
+                                                </div>
+                                            </button>
+                                        </div>
+
+                                        {/* Helper Message */}
+                                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                            <p className="text-sm text-yellow-800 text-center">
+                                                <span className="font-semibold">💡 Tip:</span> QR code works with all UPI apps. "Open UPI App" shows app chooser.
                                             </p>
                                         </div>
                                     </div>
@@ -859,14 +865,14 @@ function CheckoutContent() {
                                         <ol className="text-sm text-yellow-700 mt-1 list-decimal list-inside space-y-1">
                                             {isMobile() ? (
                                                 <>
-                                                    <li><strong>Select UPI app</strong> from buttons above</li>
+                                                    <li><strong>Choose payment method:</strong> Scan QR code OR click "Open UPI App"</li>
                                                     <li><strong>Complete payment</strong> of ₹{finalTotal}</li>
                                                     <li><strong>Fill all required fields</strong> below (marked with *)</li>
                                                     <li>Click "Place Order" to confirm</li>
                                                 </>
                                             ) : (
                                                 <>
-                                                    <li>Copy UPI name and mobile from above</li>
+                                                    <li>Scan QR code with your mobile UPI app OR copy UPI details</li>
                                                     <li>Open your UPI app and search by mobile number</li>
                                                     <li><strong>Pay ₹{finalTotal}</strong> to the merchant</li>
                                                     <li><strong>Fill all required fields</strong> below and place order</li>
