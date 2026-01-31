@@ -192,8 +192,6 @@ function CheckoutContent() {
 
     // Safe Universal UPI Payment Function - Industry Standard
     const openUpiApp = () => {
-        setUpiAppUsed("UPI Payment");
-        
         if (!isMobile()) return;
         
         const amount = finalTotal;
@@ -219,6 +217,30 @@ function CheckoutContent() {
         
         // Using QR Server API to generate QR code
         return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiString)}`;
+    };
+
+    // Download QR Code function
+    const downloadQRCode = async () => {
+        try {
+            const qrUrl = generateQRCode();
+            const response = await fetch(qrUrl);
+            const blob = await response.blob();
+            
+            // Create download link
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `TFC-UPI-QR-₹${finalTotal}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            
+            toast.success('QR Code downloaded successfully!');
+        } catch (error) {
+            console.error('Download failed:', error);
+            toast.error('Failed to download QR code. Please try again.');
+        }
     };
 
     // Copy to clipboard functions
@@ -249,10 +271,10 @@ function CheckoutContent() {
             }
         }
 
-        // UPI Payment Validation - Enhanced Required Fields
+        // UPI Payment Validation - Simplified
         if (formData.paymentMethod === "upi") {
             if (!upiAppUsed) {
-                toast.error("Please select a UPI app first");
+                toast.error("Please select a UPI app");
                 return;
             }
             if (!upiUserName || upiUserName.trim().length < 2) {
@@ -708,9 +730,19 @@ function CheckoutContent() {
                                                         className="rounded-lg"
                                                     />
                                                 </div>
-                                                <p className="text-xs text-gray-600 mt-2">
+                                                <p className="text-xs text-gray-600 mt-2 mb-3">
                                                     Open any UPI app → Scan QR → Pay ₹{finalTotal}
                                                 </p>
+                                                <button
+                                                    type="button"
+                                                    onClick={downloadQRCode}
+                                                    className="inline-flex items-center px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors"
+                                                >
+                                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                    </svg>
+                                                    Download QR Code
+                                                </button>
                                             </div>
                                         </div>
 
@@ -763,56 +795,30 @@ function CheckoutContent() {
                                         </div>
                                     </div>
 
-                                    {/* Desktop UPI Info */}
-                                    {!isMobile() && (
-                                        <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                            <h4 className="text-lg font-semibold mb-3 text-blue-800">UPI Payment Details</h4>
-                                            <div className="space-y-2">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-sm"><strong>UPI Name:</strong> {TFC_UPI_NAME}</span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => navigator.clipboard.writeText(TFC_UPI_NAME || "")}
-                                                        className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-                                                    >
-                                                        Copy Name
-                                                    </button>
-                                                </div>
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-sm"><strong>UPI Mobile:</strong> {TFC_UPI_MOBILE}</span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => navigator.clipboard.writeText(TFC_UPI_MOBILE || "")}
-                                                        className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-                                                    >
-                                                        Copy Mobile
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <p className="text-xs text-blue-700 mt-3">
-                                                Open UPI app → Search mobile number → Pay → Fill your details below
-                                            </p>
-                                        </div>
-                                    )}
 
-                                    {/* UPI Details Form - Enhanced Required Fields */}
+
+                                    {/* UPI Details Form - Simplified */}
                                     <div className="space-y-4">
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 mb-2">
                                                 UPI App Used <span className="text-red-500">*</span>
                                             </label>
-                                            <input
-                                                type="text"
+                                            <select
                                                 value={upiAppUsed}
-                                                readOnly
-                                                className={`w-full px-4 py-3 border rounded-lg bg-gray-50 text-gray-600 ${
+                                                onChange={(e) => setUpiAppUsed(e.target.value)}
+                                                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                                                     !upiAppUsed ? 'border-red-300 bg-red-50' : 'border-gray-300'
                                                 }`}
-                                                placeholder="Select UPI app above first"
                                                 required={formData.paymentMethod === "upi"}
-                                            />
+                                            >
+                                                <option value="">Select UPI App</option>
+                                                <option value="Google Pay">Google Pay</option>
+                                                <option value="PhonePe">PhonePe</option>
+                                                <option value="Paytm">Paytm</option>
+                                                <option value="Other UPI">Other UPI</option>
+                                            </select>
                                             {!upiAppUsed && (
-                                                <p className="text-red-500 text-xs mt-1">Please select a UPI app above</p>
+                                                <p className="text-red-500 text-xs mt-1">Please select a UPI app</p>
                                             )}
                                         </div>
                                         <div>
@@ -858,30 +864,13 @@ function CheckoutContent() {
                                         </div>
                                     </div>
 
-                                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                        <p className="text-sm text-yellow-800">
-                                            <strong>Important Instructions:</strong>
-                                        </p>
-                                        <ol className="text-sm text-yellow-700 mt-1 list-decimal list-inside space-y-1">
-                                            {isMobile() ? (
-                                                <>
-                                                    <li><strong>Choose payment method:</strong> Scan QR code OR click "Open UPI App"</li>
-                                                    <li><strong>Complete payment</strong> of ₹{finalTotal}</li>
-                                                    <li><strong>Fill all required fields</strong> below (marked with *)</li>
-                                                    <li>Click "Place Order" to confirm</li>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <li>Scan QR code with your mobile UPI app OR copy UPI details</li>
-                                                    <li>Open your UPI app and search by mobile number</li>
-                                                    <li><strong>Pay ₹{finalTotal}</strong> to the merchant</li>
-                                                    <li><strong>Fill all required fields</strong> below and place order</li>
-                                                </>
-                                            )}
-                                        </ol>
-                                        <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                        <p className="text-sm text-red-800">
                                             <strong>Note:</strong> All UPI fields are mandatory. Order cannot be placed without complete UPI details.
-                                        </div>
+                                        </p>
+                                        <p className="text-sm text-red-700 mt-1">
+                                            We will verify your number whether amount is paid or not.
+                                        </p>
                                     </div>
                                 </div>
                             )}
