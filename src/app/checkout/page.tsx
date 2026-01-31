@@ -210,19 +210,10 @@ function CheckoutContent() {
         
         let deepLinkUrl = "";
         
-        // � App-Specific Deep Links (Prevents WhatsApp opening)
-        if (app === "gpay") {
-            deepLinkUrl = `tez://upi/pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
-        } else if (app === "phonepe") {
-            deepLinkUrl = `phonepe://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
-        } else if (app === "paytm") {
-            deepLinkUrl = `paytmmp://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
-        } else {
-            // ✅ Universal Fallback for "Other UPI Apps" button
-            deepLinkUrl = `upi://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
-        }
+        // 🔥 FORCE WhatsApp UPI - Always use universal UPI link for ALL buttons
+        deepLinkUrl = `upi://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
         
-        console.log(`🔗 Opening ${app} with specific deep link:`, deepLinkUrl);
+        console.log(`🔗 Opening WhatsApp UPI (regardless of button clicked):`, deepLinkUrl);
         
         // Open the universal UPI link
         window.location.href = deepLinkUrl;
@@ -726,7 +717,7 @@ function CheckoutContent() {
                                         {/* Helpful Message for UPI Apps */}
                                         <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                                             <p className="text-sm text-green-800 text-center">
-                                                <span className="font-semibold">💡 Tip:</span> Your phone will automatically open the safest UPI app. If one app fails, try another.
+                                                <span className="font-semibold">💡 Tip:</span> All buttons will open WhatsApp UPI for secure payment processing.
                                             </p>
                                         </div>
                                     </div>
