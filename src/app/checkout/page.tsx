@@ -224,8 +224,8 @@ function CheckoutContent() {
         
         console.log(`🔗 Opening ${app} with specific deep link:`, deepLinkUrl);
         
-        // Open the app-specific deep link
-        window.location.href = deepLinkUrl;
+        // Open the universal UPI link
+        window.location.href = upiUrl;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -690,7 +690,7 @@ function CheckoutContent() {
                                     {/* UPI App Buttons */}
                                     <div className="mb-4">
                                         <p className="text-sm text-gray-600 mb-3">Select your UPI app to pay ₹{finalTotal}:</p>
-                                        <div className="grid grid-cols-2 gap-3 mb-3">
+                                        <div className="grid grid-cols-3 gap-3">
                                             <button
                                                 type="button"
                                                 onClick={() => openUpiApp("gpay")}
@@ -711,8 +711,6 @@ function CheckoutContent() {
                                                 </div>
                                                 <span className="text-xs font-medium">PhonePe</span>
                                             </button>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-3">
                                             <button
                                                 type="button"
                                                 onClick={() => openUpiApp("paytm")}
@@ -723,22 +721,12 @@ function CheckoutContent() {
                                                 </div>
                                                 <span className="text-xs font-medium">Paytm</span>
                                             </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => openUpiApp("other")}
-                                                className="flex flex-col items-center p-3 bg-white border border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors"
-                                            >
-                                                <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center mb-2">
-                                                    <span className="text-white text-xs font-bold">U</span>
-                                                </div>
-                                                <span className="text-xs font-medium">Other UPI</span>
-                                            </button>
                                         </div>
                                         
                                         {/* Helpful Message for UPI Apps */}
-                                        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                            <p className="text-sm text-blue-800 text-center">
-                                                <span className="font-semibold">💡 Tip:</span> Each button opens its specific app. Use "Other UPI" for BHIM, Amazon Pay, etc.
+                                        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                            <p className="text-sm text-green-800 text-center">
+                                                <span className="font-semibold">💡 Tip:</span> Your phone will automatically open the safest UPI app. If one app fails, try another.
                                             </p>
                                         </div>
                                     </div>
