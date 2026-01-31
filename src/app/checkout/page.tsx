@@ -777,11 +777,11 @@ function CheckoutContent() {
                                             </button>
                                             <button
                                                 type="button"
-                                                onClick={() => copyToClipboard(TFC_UPI_MOBILE || "", "UPI Phone")}
+                                                onClick={() => copyToClipboard(TFC_UPI_MOBILE || "", "UPI Number")}
                                                 className="flex items-center justify-center p-3 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
                                             >
                                                 <div className="text-center">
-                                                    <div className="text-sm font-semibold text-purple-800">Copy Phone</div>
+                                                    <div className="text-sm font-semibold text-purple-800">Copy UPI Number</div>
                                                     <div className="text-xs text-purple-600 mt-1">{TFC_UPI_MOBILE}</div>
                                                 </div>
                                             </button>
