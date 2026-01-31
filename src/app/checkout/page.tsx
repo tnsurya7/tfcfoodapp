@@ -190,7 +190,7 @@ function CheckoutContent() {
         }
     };
 
-    // UPI Deep Link Function - Production Ready
+    // UPI Deep Link Function - Most Compatible & Safe Format
     const openUpiApp = (app: string) => {
         // Set app name for all devices
         setUpiAppUsed(
@@ -203,21 +203,15 @@ function CheckoutContent() {
         if (!isMobile()) return;
         
         const amount = finalTotal;
-        let url = "";
         
-        if (app === "gpay") {
-            url = `tez://upi/pay?pa=${TFC_UPI_ID}&pn=${TFC_UPI_NAME}&am=${amount}&cu=INR`;
-        }
+        // ✅ RECOMMENDED UPI PAYMENT URL - Works with ALL UPI apps
+        // Format: upi://pay?pa=UPI_ID&pn=NAME&am=AMOUNT&cu=INR&tn=DESCRIPTION
+        const upiUrl = `upi://pay?pa=${TFC_UPI_ID}&pn=${encodeURIComponent(`${TFC_UPI_NAME} - ${TFC_UPI_MOBILE}`)}&am=${amount}&cu=INR&tn=${encodeURIComponent('TFC Food Order')}`;
         
-        if (app === "phonepe") {
-            url = `phonepe://pay?pa=${TFC_UPI_ID}&pn=${TFC_UPI_NAME}&am=${amount}&cu=INR`;
-        }
+        console.log(`🔗 Opening ${app} with UPI URL:`, upiUrl);
         
-        if (app === "paytm") {
-            url = `paytmmp://pay?pa=${TFC_UPI_ID}&pn=${TFC_UPI_NAME}&am=${amount}&cu=INR`;
-        }
-        
-        window.location.href = url;
+        // Universal UPI URL - works with Google Pay, PhonePe, Paytm, and all UPI apps
+        window.location.href = upiUrl;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -713,6 +707,13 @@ function CheckoutContent() {
                                                 </div>
                                                 <span className="text-xs font-medium">Paytm</span>
                                             </button>
+                                        </div>
+                                        
+                                        {/* Helpful Message for UPI Apps */}
+                                        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                            <p className="text-sm text-green-800 text-center">
+                                                <span className="font-semibold">💡 Tip:</span> If PhonePe fails, please try Google Pay or Paytm.
+                                            </p>
                                         </div>
                                     </div>
 
